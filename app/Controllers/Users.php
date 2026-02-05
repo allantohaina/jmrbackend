@@ -227,6 +227,15 @@ class Users extends ResourceController
             'is_active' => $input['is_active'] ?? null,
         ];
 
+        if (array_key_exists('is_active', $data)) {
+            $value = $data['is_active'];
+            if (is_bool($value)) {
+                $data['is_active'] = $value ? 'true' : 'false';
+            } elseif (is_int($value)) {
+                $data['is_active'] = $value ? '1' : '0';
+            }
+        }
+
         if (array_key_exists('password', $input)) {
             $data['password'] = $input['password'];
         }
