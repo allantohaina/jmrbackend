@@ -8,7 +8,9 @@ use App\Exceptions\ApiException;
 use App\Exceptions\UnknownException;
 use App\Models\RefreshTokenModel;
 use App\Models\TokenBlacklistModel;
-use App\Libraries\AuditLogger;
+use App\History\UserHistory;
+use App\History\AdminHistory;
+use App\History\TokenHistory;
 use CodeIgniter\RESTful\ResourceController;
 use Throwable;
 
@@ -61,7 +63,7 @@ class Users extends ResourceController
 
             $refreshToken = $this->issueRefreshToken($user['id']);
 
-            $this->audit('user.register', 'users', $user['id'], null, $user);
+            (new UserHistory())->logRegister($this->request, $user);
 
             return $this->respond([
                 'message' => 'Utilisateur créé avec succès',
@@ -109,10 +111,7 @@ class Users extends ResourceController
 
             $refreshToken = $this->issueRefreshToken($user['id']);
 
-            $this->audit('user.login', 'users', $user['id'], null, [
-                'email' => $user['email'],
-                'role' => $user['role'],
-            ]);
+            (new UserHistory())->logLogin($this->request, $user);
 
             return $this->respond([
                 'message' => 'Connexion réussie',
@@ -191,7 +190,7 @@ class Users extends ResourceController
 
             $user = $model->getUserById($userId);
 
-            $this->audit('user.profile.update', 'users', $userId, $before, $user);
+            (new UserHistory())->logProfileUpdate($this->request, $userId, $before, $user);
 
             return $this->respond([
                 'message' => 'Profil mis à jour avec succès',
@@ -217,7 +216,7 @@ class Users extends ResourceController
                 return $this->fail('Erreur lors de la suppression du compte', 500);
             }
 
-            $this->audit('user.profile.delete', 'users', $userId, $before, null);
+            (new UserHistory())->logProfileDelete($this->request, $userId, $before);
 
             return $this->respond([
                 'message' => 'Compte supprimé avec succès',
@@ -315,7 +314,7 @@ class Users extends ResourceController
 
             $user = $model->getUserById($id);
 
-            $this->audit('admin.user.update', 'users', $id, $before, $user);
+            (new AdminHistory())->logUserUpdate($this->request, $this->request->user['id'] ?? null, $id, $before, $user);
 
             return $this->respond([
                 'message' => 'Utilisateur mis à jour avec succès',
@@ -340,7 +339,7 @@ class Users extends ResourceController
                 return $this->fail('Erreur lors de la suppression de l\'utilisateur', 500);
             }
 
-            $this->audit('admin.user.delete', 'users', $id, $before, null);
+            (new AdminHistory())->logUserDelete($this->request, $this->request->user['id'] ?? null, $id, $before);
 
             return $this->respond([
                 'message' => 'Utilisateur supprimé avec succès',
@@ -397,9 +396,16 @@ class Users extends ResourceController
                 'replaced_by' => $this->getRefreshTokenId($newRefresh),
             ]);
 
-            $this->audit('auth.refresh', 'users', $user['id'], null, [
-                'refresh_token_rotated' => true,
-            ]);
+            $decoded = $jwt->decode($token);
+            $jti = $decoded->jti ?? null;
+            (new TokenHistory())->log(
+                $this->request,
+                'refresh',
+                $user['id'],
+                $jti,
+                $this->getRefreshTokenId($newRefresh),
+                ['refresh_token_rotated' => true]
+            );
 
             return $this->respond([
                 'token' => $token,
@@ -446,6 +452,14 @@ class Users extends ResourceController
                         'created_at' => date('Y-m-d H:i:s'),
                         'reason' => 'logout',
                     ]);
+                    (new TokenHistory())->log(
+                        $this->request,
+                        'logout',
+                        $decoded->user_id ?? null,
+                        $decoded->jti,
+                        $refreshToken ? $this->getRefreshTokenId($refreshToken) : null,
+                        null
+                    );
                 }
             }
 
@@ -559,20 +573,4 @@ class Users extends ResourceController
         ], 500);
     }
 
-    private function audit(string $action, string $entityType, ?string $entityId, ?array $before, ?array $after): void
-    {
-        $actorId = $this->request->user['id'] ?? null;
-        AuditLogger::log([
-            'id' => $this->uuidV4(),
-            'actor_user_id' => $actorId,
-            'action' => $action,
-            'entity_type' => $entityType,
-            'entity_id' => $entityId,
-            'before_data' => $before ? json_encode($before) : null,
-            'after_data' => $after ? json_encode($after) : null,
-            'ip_address' => $this->request->getIPAddress(),
-            'user_agent' => substr((string) $this->request->getUserAgent(), 0, 255),
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
-    }
 }

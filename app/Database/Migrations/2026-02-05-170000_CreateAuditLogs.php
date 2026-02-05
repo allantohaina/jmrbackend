@@ -58,10 +58,129 @@ class CreateAuditLogs extends Migration
         $this->forge->addKey('actor_user_id');
         $this->forge->addKey(['entity_type', 'entity_id']);
         $this->forge->createTable('audit_logs', true);
+
+        $this->forge->addField([
+            'id' => [
+                'type' => 'UUID',
+                'null' => false,
+            ],
+            'user_id' => [
+                'type' => 'UUID',
+                'null' => true,
+            ],
+            'action' => [
+                'type' => 'VARCHAR',
+                'constraint' => 50,
+                'null' => false,
+            ],
+            'jti' => [
+                'type' => 'VARCHAR',
+                'constraint' => 36,
+                'null' => true,
+            ],
+            'refresh_token_id' => [
+                'type' => 'UUID',
+                'null' => true,
+            ],
+            'meta' => [
+                'type' => 'JSONB',
+                'null' => true,
+            ],
+            'ip_address' => [
+                'type' => 'VARCHAR',
+                'constraint' => 64,
+                'null' => true,
+            ],
+            'user_agent' => [
+                'type' => 'VARCHAR',
+                'constraint' => 255,
+                'null' => true,
+            ],
+            'created_at' => [
+                'type' => 'TIMESTAMP',
+                'null' => false,
+            ],
+        ]);
+        $this->forge->addKey('id', true);
+        $this->forge->addKey('user_id');
+        $this->forge->addKey('action');
+        $this->forge->createTable('token_history', true);
+
+        $this->forge->addField([
+            'id' => [
+                'type' => 'UUID',
+                'null' => false,
+            ],
+            'project_id' => [
+                'type' => 'UUID',
+                'null' => true,
+            ],
+            'status' => [
+                'type' => 'VARCHAR',
+                'constraint' => 50,
+                'null' => true,
+            ],
+            'action' => [
+                'type' => 'VARCHAR',
+                'constraint' => 50,
+                'null' => false,
+            ],
+            'details' => [
+                'type' => 'JSONB',
+                'null' => true,
+            ],
+            'actor_user_id' => [
+                'type' => 'UUID',
+                'null' => true,
+            ],
+            'created_at' => [
+                'type' => 'TIMESTAMP',
+                'null' => false,
+            ],
+        ]);
+        $this->forge->addKey('id', true);
+        $this->forge->addKey('project_id');
+        $this->forge->addKey('action');
+        $this->forge->createTable('order_project_history', true);
+
+        $this->forge->addField([
+            'id' => [
+                'type' => 'UUID',
+                'null' => false,
+            ],
+            'migration' => [
+                'type' => 'VARCHAR',
+                'constraint' => 200,
+                'null' => false,
+            ],
+            'direction' => [
+                'type' => 'VARCHAR',
+                'constraint' => 10,
+                'null' => false,
+            ],
+            'batch' => [
+                'type' => 'INT',
+                'null' => true,
+            ],
+            'meta' => [
+                'type' => 'JSONB',
+                'null' => true,
+            ],
+            'executed_at' => [
+                'type' => 'TIMESTAMP',
+                'null' => false,
+            ],
+        ]);
+        $this->forge->addKey('id', true);
+        $this->forge->addKey('migration');
+        $this->forge->createTable('migration_history', true);
     }
 
     public function down()
     {
+        $this->forge->dropTable('migration_history', true);
+        $this->forge->dropTable('order_project_history', true);
+        $this->forge->dropTable('token_history', true);
         $this->forge->dropTable('audit_logs', true);
     }
 }
