@@ -8,6 +8,7 @@ use App\Exceptions\ApiException;
 use App\Exceptions\UnknownException;
 use App\Models\RefreshTokenModel;
 use App\Models\TokenBlacklistModel;
+use App\Libraries\AuditLogger;
 use CodeIgniter\RESTful\ResourceController;
 use Throwable;
 
@@ -60,6 +61,8 @@ class Users extends ResourceController
 
             $refreshToken = $this->issueRefreshToken($user['id']);
 
+            $this->audit('user.register', 'users', $user['id'], null, $user);
+
             return $this->respond([
                 'message' => 'Utilisateur créé avec succès',
                 'user' => $user,
@@ -106,6 +109,11 @@ class Users extends ResourceController
 
             $refreshToken = $this->issueRefreshToken($user['id']);
 
+            $this->audit('user.login', 'users', $user['id'], null, [
+                'email' => $user['email'],
+                'role' => $user['role'],
+            ]);
+
             return $this->respond([
                 'message' => 'Connexion réussie',
                 'user' => $user,
@@ -150,6 +158,7 @@ class Users extends ResourceController
         try {
             $model = new UserModel();
             $userId = $this->request->user['id'] ?? null;
+            $before = $model->getUserById($userId);
             $input = $this->getInputData();
 
             $data = [
@@ -182,6 +191,8 @@ class Users extends ResourceController
 
             $user = $model->getUserById($userId);
 
+            $this->audit('user.profile.update', 'users', $userId, $before, $user);
+
             return $this->respond([
                 'message' => 'Profil mis à jour avec succès',
                 'user' => $user
@@ -200,10 +211,13 @@ class Users extends ResourceController
         try {
             $model = new UserModel();
             $userId = $this->request->user['id'] ?? null;
+            $before = $model->getUserById($userId);
 
             if (!$model->delete($userId)) {
                 return $this->fail('Erreur lors de la suppression du compte', 500);
             }
+
+            $this->audit('user.profile.delete', 'users', $userId, $before, null);
 
             return $this->respond([
                 'message' => 'Compte supprimé avec succès',
@@ -258,6 +272,7 @@ class Users extends ResourceController
     {
         try {
             $model = new UserModel();
+            $before = $model->getUserById($id);
             $input = $this->getInputData();
 
             $data = [
@@ -300,6 +315,8 @@ class Users extends ResourceController
 
             $user = $model->getUserById($id);
 
+            $this->audit('admin.user.update', 'users', $id, $before, $user);
+
             return $this->respond([
                 'message' => 'Utilisateur mis à jour avec succès',
                 'user' => $user
@@ -317,10 +334,13 @@ class Users extends ResourceController
     {
         try {
             $model = new UserModel();
+            $before = $model->getUserById($id);
 
             if (!$model->delete($id)) {
                 return $this->fail('Erreur lors de la suppression de l\'utilisateur', 500);
             }
+
+            $this->audit('admin.user.delete', 'users', $id, $before, null);
 
             return $this->respond([
                 'message' => 'Utilisateur supprimé avec succès',
@@ -375,6 +395,10 @@ class Users extends ResourceController
             $model->update($record['id'], [
                 'revoked_at' => date('Y-m-d H:i:s'),
                 'replaced_by' => $this->getRefreshTokenId($newRefresh),
+            ]);
+
+            $this->audit('auth.refresh', 'users', $user['id'], null, [
+                'refresh_token_rotated' => true,
             ]);
 
             return $this->respond([
@@ -533,5 +557,22 @@ class Users extends ResourceController
         return $this->respond([
             'error' => $unknown->getMessage(),
         ], 500);
+    }
+
+    private function audit(string $action, string $entityType, ?string $entityId, ?array $before, ?array $after): void
+    {
+        $actorId = $this->request->user['id'] ?? null;
+        AuditLogger::log([
+            'id' => $this->uuidV4(),
+            'actor_user_id' => $actorId,
+            'action' => $action,
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+            'before_data' => $before ? json_encode($before) : null,
+            'after_data' => $after ? json_encode($after) : null,
+            'ip_address' => $this->request->getIPAddress(),
+            'user_agent' => substr((string) $this->request->getUserAgent(), 0, 255),
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
     }
 }
