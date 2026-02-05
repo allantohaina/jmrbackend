@@ -38,15 +38,20 @@ class UsersApiTest extends CIUnitTestCase
         $registerData = json_decode($register->getJSON(), true);
         $this->assertSame($email, $registerData['user']['email'] ?? null);
         $token = $registerData['token'] ?? null;
+        $refreshToken = $registerData['refresh_token'] ?? null;
         $this->assertNotEmpty($token);
+        $this->assertNotEmpty($refreshToken);
 
         $login = $this->postJson('/api/users/login', [
             'email' => $email,
             'password' => $password,
         ]);
         $login->assertStatus(200);
-        $loginToken = json_decode($login->getJSON(), true)['token'] ?? null;
+        $loginData = json_decode($login->getJSON(), true);
+        $loginToken = $loginData['token'] ?? null;
+        $loginRefresh = $loginData['refresh_token'] ?? null;
         $this->assertNotEmpty($loginToken);
+        $this->assertNotEmpty($loginRefresh);
 
         $profile = $this->withAuth($loginToken)
             ->get('/api/users/profile');
@@ -78,7 +83,8 @@ class UsersApiTest extends CIUnitTestCase
             'password' => $password,
         ]);
         $login->assertStatus(200);
-        $token = json_decode($login->getJSON(), true)['token'] ?? null;
+        $loginData = json_decode($login->getJSON(), true);
+        $token = $loginData['token'] ?? null;
         $this->assertNotEmpty($token);
 
         $update = $this->withAuthJson($token)
@@ -133,8 +139,11 @@ class UsersApiTest extends CIUnitTestCase
             'password' => $password,
         ]);
         $login->assertStatus(200);
-        $adminToken = json_decode($login->getJSON(), true)['token'] ?? null;
+        $loginData = json_decode($login->getJSON(), true);
+        $adminToken = $loginData['token'] ?? null;
+        $adminRefresh = $loginData['refresh_token'] ?? null;
         $this->assertNotEmpty($adminToken);
+        $this->assertNotEmpty($adminRefresh);
 
         $list = $this->withAuth($adminToken)
             ->get('/api/users');
@@ -157,6 +166,36 @@ class UsersApiTest extends CIUnitTestCase
         $delete = $this->withAuth($adminToken)
             ->delete('/api/users/' . $userId);
         $delete->assertStatus(200);
+    }
+
+    public function testRefreshAndLogoutFlow()
+    {
+        $email = 'user_' . uniqid() . '@example.com';
+        $password = 'Test123456';
+
+        $register = $this->postJson('/api/users/register', [
+            'email' => $email,
+            'password' => $password,
+            'first_name' => 'Test',
+            'last_name' => 'User',
+        ]);
+        $register->assertStatus(201);
+        $data = json_decode($register->getJSON(), true);
+        $refresh = $data['refresh_token'] ?? null;
+        $this->assertNotEmpty($refresh);
+
+        $refreshResp = $this->postJson('/api/users/refresh', [
+            'refresh_token' => $refresh,
+        ]);
+        $refreshResp->assertStatus(200);
+        $refreshData = json_decode($refreshResp->getJSON(), true);
+        $this->assertNotEmpty($refreshData['token'] ?? null);
+        $this->assertNotEmpty($refreshData['refresh_token'] ?? null);
+
+        $logout = $this->withAuthJson($refreshData['token'])
+            ->withBody(json_encode(['refresh_token' => $refreshData['refresh_token']]))
+            ->post('/api/users/logout');
+        $logout->assertStatus(200);
     }
 
     private function postJson(string $uri, array $payload)

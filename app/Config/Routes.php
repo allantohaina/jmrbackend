@@ -11,6 +11,8 @@ $routes->get('/', 'Home::index');
 $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->post('users/register', 'Users::register');
     $routes->post('users/login', 'Users::login');
+    $routes->post('users/refresh', 'Users::refresh');
+    $routes->post('users/logout', 'Users::logout');
     
     // Protected routes (authentication required)
     $routes->group('users', ['filter' => 'auth'], function($routes) {

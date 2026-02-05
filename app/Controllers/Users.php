@@ -6,6 +6,8 @@ use App\Models\UserModel;
 use App\Libraries\JWTLibrary;
 use App\Exceptions\ApiException;
 use App\Exceptions\UnknownException;
+use App\Models\RefreshTokenModel;
+use App\Models\TokenBlacklistModel;
 use CodeIgniter\RESTful\ResourceController;
 use Throwable;
 
@@ -52,13 +54,17 @@ class Users extends ResourceController
             $token = $jwt->encode([
                 'user_id' => $user['id'],
                 'email' => $user['email'],
-                'role' => $user['role']
+                'role' => $user['role'],
+                'scopes' => $this->getScopesForRole($user['role']),
             ]);
+
+            $refreshToken = $this->issueRefreshToken($user['id']);
 
             return $this->respond([
                 'message' => 'Utilisateur créé avec succès',
                 'user' => $user,
-                'token' => $token
+                'token' => $token,
+                'refresh_token' => $refreshToken
             ], 201);
         } catch (Throwable $e) {
             return $this->handleException($e);
@@ -94,13 +100,17 @@ class Users extends ResourceController
             $token = $jwt->encode([
                 'user_id' => $user['id'],
                 'email' => $user['email'],
-                'role' => $user['role']
+                'role' => $user['role'],
+                'scopes' => $this->getScopesForRole($user['role']),
             ]);
+
+            $refreshToken = $this->issueRefreshToken($user['id']);
 
             return $this->respond([
                 'message' => 'Connexion réussie',
                 'user' => $user,
-                'token' => $token
+                'token' => $token,
+                'refresh_token' => $refreshToken
             ]);
         } catch (Throwable $e) {
             return $this->handleException($e);
@@ -320,6 +330,109 @@ class Users extends ResourceController
         }
     }
 
+    /**
+     * Refresh access token
+     * POST /api/users/refresh
+     */
+    public function refresh()
+    {
+        try {
+            $input = $this->getInputData();
+            $refreshToken = $input['refresh_token'] ?? null;
+
+            if (!$refreshToken) {
+                return $this->fail('Refresh token requis', 400);
+            }
+
+            $model = new RefreshTokenModel();
+            $hash = hash('sha256', $refreshToken);
+            $record = $model->where('token_hash', $hash)->first();
+
+            if (!$record || $record['revoked_at'] !== null) {
+                return $this->fail('Refresh token invalide', 401);
+            }
+
+            if (strtotime($record['expires_at']) < time()) {
+                return $this->fail('Refresh token expiré', 401);
+            }
+
+            $userModel = new UserModel();
+            $user = $userModel->getUserById($record['user_id']);
+            if (!$user) {
+                return $this->failNotFound('Utilisateur non trouvé');
+            }
+
+            $jwt = new JWTLibrary();
+            $token = $jwt->encode([
+                'user_id' => $user['id'],
+                'email' => $user['email'],
+                'role' => $user['role'],
+                'scopes' => $this->getScopesForRole($user['role']),
+            ]);
+
+            $newRefresh = $this->issueRefreshToken($user['id']);
+
+            $model->update($record['id'], [
+                'revoked_at' => date('Y-m-d H:i:s'),
+                'replaced_by' => $this->getRefreshTokenId($newRefresh),
+            ]);
+
+            return $this->respond([
+                'token' => $token,
+                'refresh_token' => $newRefresh,
+            ]);
+        } catch (Throwable $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Logout: revoke refresh token and blacklist access token
+     * POST /api/users/logout
+     */
+    public function logout()
+    {
+        try {
+            $input = $this->getInputData();
+            $refreshToken = $input['refresh_token'] ?? null;
+
+            if ($refreshToken) {
+                $model = new RefreshTokenModel();
+                $hash = hash('sha256', $refreshToken);
+                $record = $model->where('token_hash', $hash)->first();
+                if ($record && $record['revoked_at'] === null) {
+                    $model->update($record['id'], [
+                        'revoked_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+            }
+
+            $authHeader = $this->request->getHeaderLine('Authorization');
+            if ($authHeader && preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                $token = $matches[1];
+                $jwt = new JWTLibrary();
+                $decoded = $jwt->decode($token);
+                if ($decoded && isset($decoded->jti, $decoded->exp)) {
+                    $blacklist = new TokenBlacklistModel();
+                    $blacklist->insert([
+                        'id' => $this->uuidV4(),
+                        'jti' => $decoded->jti,
+                        'expires_at' => date('Y-m-d H:i:s', (int) $decoded->exp),
+                        'revoked_at' => date('Y-m-d H:i:s'),
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'reason' => 'logout',
+                    ]);
+                }
+            }
+
+            return $this->respond([
+                'message' => 'Déconnexion réussie',
+            ]);
+        } catch (Throwable $e) {
+            return $this->handleException($e);
+        }
+    }
+
     private function getInputData(): array
     {
         $json = $this->request->getJSON(true);
@@ -353,6 +466,57 @@ class Users extends ResourceController
         }
 
         return null;
+    }
+
+    private function issueRefreshToken(string $userId): string
+    {
+        $model = new RefreshTokenModel();
+        $token = bin2hex(random_bytes(32));
+        $hash = hash('sha256', $token);
+        $expiresAt = time() + (int) (getenv('JWT_REFRESH_TTL') ?: 60 * 60 * 24 * 30);
+        $id = $this->uuidV4();
+
+        $model->insert([
+            'id' => $id,
+            'user_id' => $userId,
+            'token_hash' => $hash,
+            'expires_at' => date('Y-m-d H:i:s', $expiresAt),
+            'revoked_at' => null,
+            'replaced_by' => null,
+            'created_at' => date('Y-m-d H:i:s'),
+            'ip_address' => $this->request->getIPAddress(),
+            'user_agent' => substr((string) $this->request->getUserAgent(), 0, 255),
+        ]);
+
+        return $token;
+    }
+
+    private function getRefreshTokenId(string $refreshToken): ?string
+    {
+        $model = new RefreshTokenModel();
+        $hash = hash('sha256', $refreshToken);
+        $record = $model->where('token_hash', $hash)->first();
+
+        return $record['id'] ?? null;
+    }
+
+    private function getScopesForRole(string $role): array
+    {
+        if ($role === 'admin') {
+            return ['users:read', 'users:write', 'admin:all'];
+        }
+
+        return ['users:read', 'users:write'];
+    }
+
+    private function uuidV4(): string
+    {
+        $bytes = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+        $hex = bin2hex($bytes);
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($hex, 4));
     }
 
     private function handleException(Throwable $e)

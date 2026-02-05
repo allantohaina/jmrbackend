@@ -6,25 +6,39 @@ class JWTLibrary
 {
     private string $secretKey;
     private string $algorithm = 'HS256';
+    private string $issuer;
+    private string $audience;
+    private int $leeway;
 
     public function __construct()
     {
         $this->secretKey = getenv('JWT_SECRET_KEY') ?: 'your-secret-key-change-this-in-production';
+        $this->issuer = getenv('JWT_ISSUER') ?: 'jmr-textile';
+        $this->audience = getenv('JWT_AUDIENCE') ?: 'jmr-textile-client';
+        $this->leeway = (int) (getenv('JWT_LEEWAY') ?: 0);
     }
 
     /**
      * Generate JWT token
      */
-    public function encode(array $payload): string
+    public function encode(array $payload, array $options = []): string
     {
         $header = [
             'typ' => 'JWT',
             'alg' => $this->algorithm
         ];
 
+        $now = time();
+        $ttl = (int) ($options['ttl'] ?? 60 * 60 * 24);
+
+        $payload['iss'] = $options['iss'] ?? $this->issuer;
+        $payload['aud'] = $options['aud'] ?? $this->audience;
+        $payload['jti'] = $payload['jti'] ?? $this->generateJti();
+        $payload['nbf'] = $options['nbf'] ?? $now;
+
         // Add issued at and expiration time
-        $payload['iat'] = time();
-        $payload['exp'] = time() + (60 * 60 * 24); // 24 hours
+        $payload['iat'] = $now;
+        $payload['exp'] = $now + $ttl;
 
         $headerEncoded = $this->base64UrlEncode(json_encode($header));
         $payloadEncoded = $this->base64UrlEncode(json_encode($payload));
@@ -38,7 +52,7 @@ class JWTLibrary
     /**
      * Decode and verify JWT token
      */
-    public function decode(string $token): ?object
+    public function decode(string $token, array $options = []): ?object
     {
         $parts = explode('.', $token);
 
@@ -58,8 +72,25 @@ class JWTLibrary
 
         $payload = json_decode($this->base64UrlDecode($payloadEncoded));
 
+        $now = time();
+
+        // Check issuer/audience if provided
+        $iss = $options['iss'] ?? $this->issuer;
+        $aud = $options['aud'] ?? $this->audience;
+        if (isset($payload->iss) && $payload->iss !== $iss) {
+            return null;
+        }
+        if (isset($payload->aud) && $payload->aud !== $aud) {
+            return null;
+        }
+
+        // Check not-before
+        if (isset($payload->nbf) && $payload->nbf > ($now + $this->leeway)) {
+            return null;
+        }
+
         // Check expiration
-        if (isset($payload->exp) && $payload->exp < time()) {
+        if (isset($payload->exp) && $payload->exp < ($now - $this->leeway)) {
             return null;
         }
 
@@ -84,5 +115,15 @@ class JWTLibrary
             $data .= str_repeat('=', 4 - $remainder);
         }
         return base64_decode(strtr($data, '-_', '+/'));
+    }
+
+    private function generateJti(): string
+    {
+        $bytes = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+        $hex = bin2hex($bytes);
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($hex, 4));
     }
 }

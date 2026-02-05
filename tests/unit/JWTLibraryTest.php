@@ -15,6 +15,7 @@ class JWTLibraryTest extends CIUnitTestCase
             'user_id' => 'user-123',
             'email'   => 'user@example.com',
             'role'    => 'user',
+            'scopes'  => ['users:read'],
         ]);
 
         $decoded = $jwt->decode($token);
@@ -23,8 +24,13 @@ class JWTLibraryTest extends CIUnitTestCase
         $this->assertSame('user-123', $decoded->user_id);
         $this->assertSame('user@example.com', $decoded->email);
         $this->assertSame('user', $decoded->role);
+        $this->assertSame(['users:read'], $decoded->scopes);
         $this->assertTrue(isset($decoded->iat));
         $this->assertTrue(isset($decoded->exp));
+        $this->assertTrue(isset($decoded->iss));
+        $this->assertTrue(isset($decoded->aud));
+        $this->assertTrue(isset($decoded->jti));
+        $this->assertTrue(isset($decoded->nbf));
         $this->assertGreaterThan($decoded->iat, $decoded->exp);
     }
 

@@ -7,6 +7,7 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use App\Libraries\JWTLibrary;
 use App\Models\UserModel;
+use App\Models\TokenBlacklistModel;
 
 class AuthFilter implements FilterInterface
 {
@@ -29,6 +30,20 @@ class AuthFilter implements FilterInterface
         if (!$decoded) {
             return service('response')
                 ->setJSON(['error' => 'Token invalide ou expiré'])
+                ->setStatusCode(401);
+        }
+
+        if (!isset($decoded->jti)) {
+            return service('response')
+                ->setJSON(['error' => 'Token invalide'])
+                ->setStatusCode(401);
+        }
+
+        $blacklist = new TokenBlacklistModel();
+        $revoked = $blacklist->where('jti', $decoded->jti)->first();
+        if ($revoked) {
+            return service('response')
+                ->setJSON(['error' => 'Token révoqué'])
                 ->setStatusCode(401);
         }
 
