@@ -9,10 +9,10 @@ $routes->get('/', 'Home::index');
 
 // Public routes (no authentication required)
 $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
-    $routes->post('users/register', 'Users::register');
-    $routes->post('users/login', 'Users::login');
-    $routes->post('users/refresh', 'Users::refresh');
-    $routes->post('users/logout', 'Users::logout');
+    $routes->post('users/register', 'Users::register', ['filter' => 'ratelimit:auth']);
+    $routes->post('users/login', 'Users::login', ['filter' => 'ratelimit:login']);
+    $routes->post('users/refresh', 'Users::refresh', ['filter' => 'ratelimit:auth']);
+    $routes->post('users/logout', 'Users::logout', ['filter' => 'ratelimit:auth']);
 
     $routes->group('legal', function($routes) {
         $routes->get('privacy', 'Legal::privacy');

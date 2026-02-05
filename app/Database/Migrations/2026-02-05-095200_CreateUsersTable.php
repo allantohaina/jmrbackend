@@ -43,6 +43,22 @@ class CreateUsersTable extends Migration
                 'type' => 'BOOLEAN',
                 'default' => true,
             ],
+            'failed_login_count' => [
+                'type' => 'INT',
+                'default' => 0,
+            ],
+            'locked_until' => [
+                'type' => 'TIMESTAMP',
+                'null' => true,
+            ],
+            'last_failed_login_at' => [
+                'type' => 'TIMESTAMP',
+                'null' => true,
+            ],
+            'last_login_at' => [
+                'type' => 'TIMESTAMP',
+                'null' => true,
+            ],
             'created_at' => [
                 'type' => 'TIMESTAMP',
                 'null' => true,

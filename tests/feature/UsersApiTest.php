@@ -19,6 +19,12 @@ class UsersApiTest extends CIUnitTestCase
     {
         parent::setUp();
         putenv('JWT_SECRET_KEY=test-secret-key');
+        putenv('LOGIN_MAX_ATTEMPTS=2');
+        putenv('LOGIN_LOCK_MINUTES=1');
+        putenv('RATE_LIMIT_LOGIN_MAX=2');
+        putenv('RATE_LIMIT_LOGIN_WINDOW=60');
+        putenv('RATE_LIMIT_AUTH_MAX=5');
+        putenv('RATE_LIMIT_AUTH_WINDOW=60');
     }
 
     public function testRegisterLoginProfileFlow()
@@ -198,9 +204,66 @@ class UsersApiTest extends CIUnitTestCase
         $logout->assertStatus(200);
     }
 
+    public function testLoginRateLimit()
+    {
+        $ip = '10.0.0.1';
+        $payload = [
+            'email' => 'nope_' . uniqid() . '@example.com',
+            'password' => 'Wrong123456',
+        ];
+
+        $first = $this->postJsonWithIp($ip, '/api/users/login', $payload);
+        $first->assertStatus(401);
+
+        $second = $this->postJsonWithIp($ip, '/api/users/login', $payload);
+        $second->assertStatus(401);
+
+        $third = $this->postJsonWithIp($ip, '/api/users/login', $payload);
+        $third->assertStatus(429);
+    }
+
+    public function testAccountLockAfterFailedLogins()
+    {
+        $email = 'lock_' . uniqid() . '@example.com';
+        $password = 'Test123456';
+
+        $register = $this->postJson('/api/users/register', [
+            'email' => $email,
+            'password' => $password,
+            'first_name' => 'Lock',
+            'last_name' => 'User',
+        ]);
+        $register->assertStatus(201);
+
+        $bad = [
+            'email' => $email,
+            'password' => 'Wrong123456',
+        ];
+
+        $first = $this->postJsonWithIp('10.0.0.2', '/api/users/login', $bad);
+        $first->assertStatus(401);
+
+        $second = $this->postJsonWithIp('10.0.0.3', '/api/users/login', $bad);
+        $second->assertStatus(423);
+
+        $third = $this->postJsonWithIp('10.0.0.4', '/api/users/login', [
+            'email' => $email,
+            'password' => $password,
+        ]);
+        $third->assertStatus(423);
+    }
+
     private function postJson(string $uri, array $payload)
     {
         return $this->withBody(json_encode($payload))
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->post($uri);
+    }
+
+    private function postJsonWithIp(string $ip, string $uri, array $payload)
+    {
+        return $this->withServer(['REMOTE_ADDR' => $ip])
+            ->withBody(json_encode($payload))
             ->withHeaders(['Content-Type' => 'application/json'])
             ->post($uri);
     }

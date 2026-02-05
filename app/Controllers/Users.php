@@ -95,11 +95,44 @@ class Users extends ResourceController
                 return $this->fail('Email et mot de passe requis', 400);
             }
 
-            $user = $model->verifyCredentials($email, $password);
+            $maxAttempts = (int) (getenv('LOGIN_MAX_ATTEMPTS') ?: 5);
+            $lockMinutes = (int) (getenv('LOGIN_LOCK_MINUTES') ?: 15);
 
-            if (!$user) {
+            $userRecord = $model->getUserForLogin($email);
+
+            if (!$userRecord || !($userRecord['is_active'] ?? false)) {
+                (new UserHistory())->logLoginFailed($this->request, $email, $userRecord['id'] ?? null, 'invalid_credentials');
                 return $this->fail('Email ou mot de passe incorrect', 401);
             }
+
+            if (!empty($userRecord['locked_until']) && strtotime($userRecord['locked_until']) > time()) {
+                (new UserHistory())->logLoginFailed($this->request, $email, $userRecord['id'] ?? null, 'locked');
+                return $this->fail('Compte temporairement verrouillé', 423);
+            }
+
+            if (!password_verify($password, $userRecord['password_hash'])) {
+                $failed = ((int) ($userRecord['failed_login_count'] ?? 0)) + 1;
+                $lockedUntil = null;
+                if ($failed >= $maxAttempts) {
+                    $lockedUntil = date('Y-m-d H:i:s', time() + ($lockMinutes * 60));
+                }
+                $model->recordLoginFailure($userRecord['id'], $failed, $lockedUntil);
+                (new UserHistory())->logLoginFailed(
+                    $this->request,
+                    $email,
+                    $userRecord['id'] ?? null,
+                    $lockedUntil ? 'locked' : 'invalid_password'
+                );
+
+                if ($lockedUntil) {
+                    return $this->fail('Compte temporairement verrouillé', 423);
+                }
+
+                return $this->fail('Email ou mot de passe incorrect', 401);
+            }
+
+            $model->recordLoginSuccess($userRecord['id']);
+            $user = $model->getUserById($userRecord['id']);
 
             // Generate JWT token
             $token = $jwt->encode([

@@ -43,6 +43,22 @@ class CreateUsersTable extends Migration
                 'type'    => 'BOOLEAN',
                 'default' => true,
             ],
+            'failed_login_count' => [
+                'type' => 'INTEGER',
+                'default' => 0,
+            ],
+            'locked_until' => [
+                'type' => 'TEXT',
+                'null' => true,
+            ],
+            'last_failed_login_at' => [
+                'type' => 'TEXT',
+                'null' => true,
+            ],
+            'last_login_at' => [
+                'type' => 'TEXT',
+                'null' => true,
+            ],
             'created_at' => [
                 'type' => 'TEXT',
                 'null' => true,

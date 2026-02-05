@@ -19,7 +19,11 @@ class UserModel extends Model
         'last_name',
         'phone',
         'role',
-        'is_active'
+        'is_active',
+        'failed_login_count',
+        'locked_until',
+        'last_failed_login_at',
+        'last_login_at',
     ];
 
     // Dates
@@ -116,6 +120,29 @@ class UserModel extends Model
         return $user;
     }
 
+    public function getUserForLogin(string $email): ?array
+    {
+        return $this->where('email', $email)->first();
+    }
+
+    public function recordLoginSuccess(string $userId): void
+    {
+        $this->update($userId, [
+            'failed_login_count' => 0,
+            'locked_until' => null,
+            'last_login_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    public function recordLoginFailure(string $userId, int $failedCount, ?string $lockedUntil): void
+    {
+        $this->update($userId, [
+            'failed_login_count' => $failedCount,
+            'locked_until' => $lockedUntil,
+            'last_failed_login_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
     /**
      * Get user by ID without password
      */
@@ -124,6 +151,7 @@ class UserModel extends Model
         $user = $this->find($id);
         if ($user) {
             unset($user['password_hash']);
+            unset($user['failed_login_count'], $user['locked_until'], $user['last_failed_login_at'], $user['last_login_at']);
         }
         return $user;
     }
@@ -136,6 +164,7 @@ class UserModel extends Model
         $users = $this->findAll();
         foreach ($users as &$user) {
             unset($user['password_hash']);
+            unset($user['failed_login_count'], $user['locked_until'], $user['last_failed_login_at'], $user['last_login_at']);
         }
         return $users;
     }
