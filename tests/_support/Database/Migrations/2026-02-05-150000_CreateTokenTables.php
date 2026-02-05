@@ -3,7 +3,6 @@
 namespace Tests\Support\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
-
 class CreateTokenTables extends Migration
 {
     public function up()
@@ -80,11 +79,13 @@ class CreateTokenTables extends Migration
         $this->forge->addKey('id', true);
         $this->forge->addKey('jti');
         $this->forge->createTable('token_blacklist', true);
+
     }
 
     public function down()
     {
         $this->forge->dropTable('token_blacklist', true);
         $this->forge->dropTable('refresh_tokens', true);
+
     }
 }

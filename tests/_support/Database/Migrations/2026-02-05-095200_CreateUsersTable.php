@@ -3,7 +3,6 @@
 namespace Tests\Support\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
-
 class CreateUsersTable extends Migration
 {
     public function up()
@@ -60,6 +59,7 @@ class CreateUsersTable extends Migration
 
         $this->forge->addKey('id', true);
         $this->forge->createTable('users', true);
+
     }
 
     public function down()

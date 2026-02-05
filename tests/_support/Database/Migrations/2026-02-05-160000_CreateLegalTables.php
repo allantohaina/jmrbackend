@@ -3,7 +3,6 @@
 namespace Tests\Support\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
-
 class CreateLegalTables extends Migration
 {
     public function up()
@@ -129,6 +128,7 @@ class CreateLegalTables extends Migration
         $this->forge->addKey('id', true);
         $this->forge->addKey('email');
         $this->forge->createTable('email_unsubscribes', true);
+
     }
 
     public function down()
@@ -136,5 +136,6 @@ class CreateLegalTables extends Migration
         $this->forge->dropTable('email_unsubscribes', true);
         $this->forge->dropTable('data_requests', true);
         $this->forge->dropTable('user_consents', true);
+
     }
 }

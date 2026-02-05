@@ -39,4 +39,10 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
             $routes->delete('(:segment)', 'Users::delete/$1');
         });
     });
+
+    $routes->group('admin/history', ['filter' => 'admin'], function($routes) {
+        $routes->get('audit', 'History::audit');
+        $routes->get('tokens', 'History::tokens');
+        $routes->get('projects', 'History::projects');
+    });
 });

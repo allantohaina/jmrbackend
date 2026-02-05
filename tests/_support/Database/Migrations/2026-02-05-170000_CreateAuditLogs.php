@@ -3,7 +3,6 @@
 namespace Tests\Support\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
-
 class CreateAuditLogs extends Migration
 {
     public function up()
@@ -141,40 +140,10 @@ class CreateAuditLogs extends Migration
         $this->forge->addKey('project_id');
         $this->forge->addKey('action');
         $this->forge->createTable('order_project_history', true);
-
-        $this->forge->addField([
-            'id' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 36,
-            ],
-            'migration' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 200,
-            ],
-            'direction' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 10,
-            ],
-            'batch' => [
-                'type' => 'INTEGER',
-                'null' => true,
-            ],
-            'meta' => [
-                'type' => 'TEXT',
-                'null' => true,
-            ],
-            'executed_at' => [
-                'type' => 'TEXT',
-            ],
-        ]);
-        $this->forge->addKey('id', true);
-        $this->forge->addKey('migration');
-        $this->forge->createTable('migration_history', true);
     }
 
     public function down()
     {
-        $this->forge->dropTable('migration_history', true);
         $this->forge->dropTable('order_project_history', true);
         $this->forge->dropTable('token_history', true);
         $this->forge->dropTable('audit_logs', true);
