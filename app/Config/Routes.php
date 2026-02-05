@@ -13,6 +13,16 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->post('users/login', 'Users::login');
     $routes->post('users/refresh', 'Users::refresh');
     $routes->post('users/logout', 'Users::logout');
+
+    $routes->group('legal', function($routes) {
+        $routes->get('privacy', 'Legal::privacy');
+        $routes->get('terms', 'Legal::terms');
+        $routes->get('cookies', 'Legal::cookies');
+        $routes->get('disclaimer', 'Legal::disclaimer');
+        $routes->get('accessibility', 'Legal::accessibility');
+        $routes->post('consent', 'Legal::consent');
+        $routes->post('data-request', 'Legal::dataRequest');
+    });
     
     // Protected routes (authentication required)
     $routes->group('users', ['filter' => 'auth'], function($routes) {
