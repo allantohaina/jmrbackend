@@ -1,44 +1,82 @@
-# Privacy Policy (Template)
+# Politique de Confidentialité
+## JMR TEXTILE
 
 **Version:** 1.0.0  
-**Effective date:** YYYY-MM-DD
+**Date d’effet:** YYYY-MM-DD
 
-## Who We Are
-Company name: JMR Textile  
-Contact: privacy@jmrtextile.com  
-Address: [ADD COMPANY ADDRESS]
+### 1. Introduction
+La présente Politique de Confidentialité décrit la manière dont JMR TEXTILE collecte, utilise et protège les données personnelles des utilisateurs de son site internet et de ses clients professionnels, dans le cadre de ses activités de confection et sous-traitance textile B2B.
 
-## What We Collect
-- Account data (email, name, phone)
-- Authentication data (tokens, device data)
-- Usage data (IP, user agent, logs)
-- Cookies and similar technologies
+### 2. Données collectées
+JMR TEXTILE peut collecter les données suivantes :
+- Nom, prénom
+- Nom de l’entreprise
+- Adresse email professionnelle
+- Numéro de téléphone
+- Informations liées aux demandes de devis ou projets textiles
+- Données techniques de navigation (cookies, adresse IP, type de navigateur)
 
-## Why We Collect It
-- To provide and secure the service
-- To manage accounts and support
-- To meet legal obligations
+Aucune donnée sensible n’est collectée volontairement.
 
-## Legal Bases (International)
-- Consent (where required)
-- Contract performance
-- Legitimate interests
-- Legal obligations
+### 3. Finalité de la collecte
+Les données collectées sont utilisées exclusivement pour :
+- répondre aux demandes de contact ou de devis,
+- gérer la relation commerciale B2B,
+- assurer le suivi des projets et commandes,
+- améliorer le fonctionnement et la sécurité du site.
 
-## Sharing
-We only share data with service providers for hosting, analytics, and security. We do not sell personal data.
+Les données ne sont ni vendues, ni louées, ni cédées à des tiers.
 
-## Retention
-We keep data only as long as needed for the purposes above and as required by law.
+### 4. Base légale du traitement
+Les traitements de données sont fondés sur :
+- l’intérêt légitime de JMR TEXTILE à développer son activité,
+- l’exécution de mesures précontractuelles ou contractuelles à la demande du client,
+- le consentement de l’utilisateur lorsque requis (cookies).
 
-## Your Rights
-You can request access, correction, deletion, portability, and objection where applicable.
+### 5. Durée de conservation
+Les données sont conservées :
+- pendant la durée nécessaire au traitement de la demande ou du contrat,
+- puis archivées pour une durée maximale conforme aux obligations légales et commerciales.
 
-## International Transfers
-If data is transferred internationally, we use appropriate safeguards.
+Les données de prospection non contractualisées peuvent être supprimées sur demande.
 
-## Security
-We use technical and organizational measures to protect data.
+### 6. Partage des données
+Les données peuvent être partagées uniquement avec :
+- les membres internes de JMR TEXTILE,
+- les prestataires techniques nécessaires au fonctionnement du site (hébergement, messagerie).
 
-## Contact
-Email us at privacy@jmrtextile.com.
+Aucun transfert commercial de données à des tiers n’est effectué.
+
+### 7. Sécurité des données
+JMR TEXTILE met en œuvre des mesures techniques et organisationnelles raisonnables afin de protéger les données contre :
+- l’accès non autorisé,
+- la perte,
+- l’altération ou la divulgation.
+
+### 8. Droits des utilisateurs
+Conformément à la réglementation applicable, les utilisateurs disposent des droits suivants :
+- droit d’accès,
+- droit de rectification,
+- droit de suppression,
+- droit d’opposition au traitement,
+- droit à la limitation du traitement.
+
+Toute demande peut être adressée par email à l’adresse de contact indiquée ci-dessous.
+
+### 9. Cookies
+Le site peut utiliser des cookies à des fins :
+- de fonctionnement,
+- de mesure d’audience,
+- d’amélioration de l’expérience utilisateur.
+
+L’utilisateur peut configurer ou refuser les cookies via les paramètres de son navigateur.
+
+### 10. Modification de la politique
+JMR TEXTILE se réserve le droit de modifier la présente Politique de Confidentialité à tout moment afin de rester conforme aux évolutions légales ou techniques.  
+La version applicable est celle publiée sur le site à la date de consultation.
+
+### 11. Contact
+Pour toute question relative à la protection des données personnelles, l’utilisateur peut contacter :  
+JMR TEXTILE  
+Email : (à compléter)  
+Pays d’exploitation : Madagascar

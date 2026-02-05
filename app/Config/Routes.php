@@ -20,6 +20,7 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->get('cookies', 'Legal::cookies');
         $routes->get('disclaimer', 'Legal::disclaimer');
         $routes->get('accessibility', 'Legal::accessibility');
+        $routes->get('legal-notice', 'Legal::legalNotice');
         $routes->post('consent', 'Legal::consent');
         $routes->post('data-request', 'Legal::dataRequest');
     });

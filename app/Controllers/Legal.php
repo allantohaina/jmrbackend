@@ -36,6 +36,11 @@ class Legal extends ResourceController
         return $this->respond($this->loadLegalDoc('accessibility'));
     }
 
+    public function legalNotice()
+    {
+        return $this->respond($this->loadLegalDoc('legal-notice'));
+    }
+
     public function consent()
     {
         try {
