@@ -25,7 +25,7 @@ class RateLimitFilter implements FilterInterface
                 ->setHeader('X-RateLimit-Limit', (string) ($payload['limit'] ?? 0))
                 ->setHeader('X-RateLimit-Remaining', '0')
                 ->setJSON([
-                    'error' => $payload['error'] ?? 'Trop de requÃªtes, rÃ©essayez plus tard.',
+                    'error' => $payload['error'] ?? lang('RateLimit.too_many'),
                     'retry_after' => $payload['retry_after'] ?? 0,
                 ]);
         }

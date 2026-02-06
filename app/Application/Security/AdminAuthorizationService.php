@@ -16,7 +16,7 @@ class AdminAuthorizationService
         }
 
         if ($role !== 'admin') {
-            return Result::forbidden(['error' => 'AccÃ¨s refusÃ©. Droits administrateur requis.']);
+            return Result::forbidden(['error' => lang('Auth.admin.required')]);
         }
 
         return Result::ok(true);

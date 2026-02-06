@@ -149,7 +149,7 @@ class Users extends ResourceController
             case Result::TYPE_FAIL:
                 return $this->fail($result->getPayload(), $result->getStatus());
             default:
-                return $this->fail('Erreur interne', 500);
+                return $this->fail(lang('Common.errors.unexpected'), 500);
         }
     }
 
@@ -187,7 +187,7 @@ class Users extends ResourceController
             ], $e->getStatusCode());
         }
 
-        $unknown = new UnknownException('Une erreur inattendue est survenue.', 0, $e);
+        $unknown = new UnknownException(lang('Common.errors.unexpected'), 0, $e);
 
         return $this->respond([
             'error' => $unknown->getMessage(),

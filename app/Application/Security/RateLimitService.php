@@ -56,7 +56,7 @@ class RateLimitService
 
         if ($entry['count'] > $limit['max']) {
             return Result::fail([
-                'error' => 'Trop de requÃªtes, rÃ©essayez plus tard.',
+                'error' => lang('RateLimit.too_many'),
                 'retry_after' => $retryAfter,
                 'limit' => $limit['max'],
                 'remaining' => 0,

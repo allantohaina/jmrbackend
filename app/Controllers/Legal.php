@@ -49,7 +49,7 @@ class Legal extends ResourceController
             $result = $this->legalService()->recordConsent($this->getInputData(), $this->request);
             return $this->respondResult($result);
         } catch (Throwable $e) {
-            return $this->fail('Erreur lors de l\'enregistrement du consentement', 500);
+            return $this->fail(lang('Legal.consent.error'), 500);
         }
     }
 
@@ -59,7 +59,7 @@ class Legal extends ResourceController
             $result = $this->legalService()->recordDataRequest($this->getInputData(), $this->request);
             return $this->respondResult($result);
         } catch (Throwable $e) {
-            return $this->fail('Erreur lors de la crÃ©ation de la demande', 500);
+            return $this->fail(lang('Legal.data_request.error'), 500);
         }
     }
 
@@ -76,7 +76,7 @@ class Legal extends ResourceController
             case Result::TYPE_FAIL:
                 return $this->fail($result->getPayload(), $result->getStatus());
             default:
-                return $this->fail('Erreur interne', 500);
+                return $this->fail(lang('Common.errors.unexpected'), 500);
         }
     }
 

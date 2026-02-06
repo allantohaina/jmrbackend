@@ -31,7 +31,7 @@ class UserService
         $missing = $this->validateRequired($data, ['email', 'password', 'first_name', 'last_name']);
         if (!empty($missing)) {
             return Result::fail([
-                'error' => 'Champs requis manquants',
+                'error' => lang('Users.errors.required_fields'),
                 'missing' => $missing,
             ], 400);
         }
@@ -55,7 +55,7 @@ class UserService
         (new UserHistory())->logRegister($request, $user);
 
         return Result::created([
-            'message' => 'Utilisateur crÃ©Ã© avec succÃ¨s',
+            'message' => lang('Users.register.success'),
             'user' => $user,
             'token' => $token,
             'refresh_token' => $refreshToken,
@@ -71,7 +71,7 @@ class UserService
         $password = $input['password'] ?? null;
 
         if (!$email || !$password) {
-            return Result::fail('Email et mot de passe requis', 400);
+            return Result::fail(lang('Users.login.required'), 400);
         }
 
         $maxAttempts = (int) (getenv('LOGIN_MAX_ATTEMPTS') ?: 5);
@@ -81,12 +81,12 @@ class UserService
 
         if (!$userRecord || !($userRecord['is_active'] ?? false)) {
             (new UserHistory())->logLoginFailed($request, $email, $userRecord['id'] ?? null, 'invalid_credentials');
-            return Result::fail('Email ou mot de passe incorrect', 401);
+            return Result::fail(lang('Users.login.invalid'), 401);
         }
 
         if (!empty($userRecord['locked_until']) && strtotime($userRecord['locked_until']) > time()) {
             (new UserHistory())->logLoginFailed($request, $email, $userRecord['id'] ?? null, 'locked');
-            return Result::fail('Compte temporairement verrouillÃ©', 423);
+            return Result::fail(lang('Users.login.locked'), 423);
         }
 
         if (!password_verify($password, $userRecord['password_hash'])) {
@@ -104,10 +104,10 @@ class UserService
             );
 
             if ($lockedUntil) {
-                return Result::fail('Compte temporairement verrouillÃ©', 423);
+                return Result::fail(lang('Users.login.locked'), 423);
             }
 
-            return Result::fail('Email ou mot de passe incorrect', 401);
+            return Result::fail(lang('Users.login.invalid'), 401);
         }
 
         $model->recordLoginSuccess($userRecord['id']);
@@ -125,7 +125,7 @@ class UserService
         (new UserHistory())->logLogin($request, $user);
 
         return Result::ok([
-            'message' => 'Connexion rÃ©ussie',
+            'message' => lang('Users.login.success'),
             'user' => $user,
             'token' => $token,
             'refresh_token' => $refreshToken,
@@ -138,7 +138,7 @@ class UserService
         $user = $model->getUserById((string) $userId);
 
         if (!$user) {
-            return Result::notFound('Utilisateur non trouvÃ©');
+            return Result::notFound(lang('Users.errors.not_found'));
         }
 
         return Result::ok($user);
@@ -165,7 +165,7 @@ class UserService
         $missing = $this->validateRequired($data, ['email', 'first_name', 'last_name']);
         if (!empty($missing)) {
             return Result::fail([
-                'error' => 'Champs requis manquants',
+                'error' => lang('Users.errors.required_fields'),
                 'missing' => $missing,
             ], 400);
         }
@@ -183,7 +183,7 @@ class UserService
         (new UserHistory())->logProfileUpdate($request, (string) $userId, $before, $user);
 
         return Result::ok([
-            'message' => 'Profil mis Ã  jour avec succÃ¨s',
+            'message' => lang('Users.profile.updated'),
             'user' => $user,
         ]);
     }
@@ -194,13 +194,13 @@ class UserService
         $before = $model->getUserById((string) $userId);
 
         if (!$model->delete((string) $userId)) {
-            return Result::fail('Erreur lors de la suppression du compte', 500);
+            return Result::fail(lang('Users.errors.delete_account'), 500);
         }
 
         (new UserHistory())->logProfileDelete($request, (string) $userId, $before);
 
         return Result::ok([
-            'message' => 'Compte supprimÃ© avec succÃ¨s',
+            'message' => lang('Users.profile.deleted'),
         ]);
     }
 
@@ -216,7 +216,7 @@ class UserService
         $user = $model->getUserById((string) $id);
 
         if (!$user) {
-            return Result::notFound('Utilisateur non trouvÃ©');
+            return Result::notFound(lang('Users.errors.not_found'));
         }
 
         return Result::ok($user);
@@ -254,7 +254,7 @@ class UserService
         $missing = $this->validateRequired($data, ['email', 'first_name', 'last_name']);
         if (!empty($missing)) {
             return Result::fail([
-                'error' => 'Champs requis manquants',
+                'error' => lang('Users.errors.required_fields'),
                 'missing' => $missing,
             ], 400);
         }
@@ -272,7 +272,7 @@ class UserService
         (new AdminHistory())->logUserUpdate($request, $actorId, (string) $id, $before, $user);
 
         return Result::ok([
-            'message' => 'Utilisateur mis Ã  jour avec succÃ¨s',
+            'message' => lang('Users.admin.updated'),
             'user' => $user,
         ]);
     }
@@ -283,20 +283,20 @@ class UserService
         $before = $model->getUserById((string) $id);
 
         if (!$model->delete((string) $id)) {
-            return Result::fail('Erreur lors de la suppression de l\'utilisateur', 500);
+            return Result::fail(lang('Users.errors.delete_user'), 500);
         }
 
         (new AdminHistory())->logUserDelete($request, $actorId, (string) $id, $before);
 
         return Result::ok([
-            'message' => 'Utilisateur supprimÃ© avec succÃ¨s',
+            'message' => lang('Users.admin.deleted'),
         ]);
     }
 
     public function refreshToken(?string $refreshToken, IncomingRequest $request): Result
     {
         if (!$refreshToken) {
-            return Result::fail('Refresh token requis', 400);
+            return Result::fail(lang('Users.refresh.required'), 400);
         }
 
         $model = new RefreshTokenModel();
@@ -304,17 +304,17 @@ class UserService
         $record = $model->where('token_hash', $hash)->first();
 
         if (!$record || $record['revoked_at'] !== null) {
-            return Result::fail('Refresh token invalide', 401);
+            return Result::fail(lang('Users.refresh.invalid'), 401);
         }
 
         if (strtotime($record['expires_at']) < time()) {
-            return Result::fail('Refresh token expirÃ©', 401);
+            return Result::fail(lang('Users.refresh.expired'), 401);
         }
 
         $userModel = new UserModel();
         $user = $userModel->getUserById($record['user_id']);
         if (!$user) {
-            return Result::notFound('Utilisateur non trouvÃ©');
+            return Result::notFound(lang('Users.errors.not_found'));
         }
 
         $jwt = new JWTLibrary();
@@ -388,7 +388,7 @@ class UserService
         }
 
         return Result::ok([
-            'message' => 'DÃ©connexion rÃ©ussie',
+            'message' => lang('Users.logout.success'),
         ]);
     }
 

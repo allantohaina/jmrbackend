@@ -31,7 +31,7 @@ class LegalService
             $userId = $input['user_id'] ?? null;
 
             if ($subject === null || $version === null || $granted === null) {
-                return Result::fail('subject, version et granted requis', 400);
+                return Result::fail(lang('Legal.consent.required'), 400);
             }
 
             $model = new ConsentModel();
@@ -50,11 +50,11 @@ class LegalService
             ]);
 
             return Result::created([
-                'message' => 'Consentement enregistrÃ©',
+                'message' => lang('Legal.consent.saved'),
                 'id' => $id,
             ]);
         } catch (Throwable $e) {
-            return Result::fail('Erreur lors de l\'enregistrement du consentement', 500);
+            return Result::fail(lang('Legal.consent.error'), 500);
         }
     }
 
@@ -67,7 +67,7 @@ class LegalService
             $details = $input['details'] ?? null;
 
             if ($requestType === null) {
-                return Result::fail('request_type requis', 400);
+                return Result::fail(lang('Legal.data_request.required'), 400);
             }
 
             $model = new DataRequestModel();
@@ -88,11 +88,11 @@ class LegalService
             ]);
 
             return Result::created([
-                'message' => 'Demande enregistrÃ©e',
+                'message' => lang('Legal.data_request.saved'),
                 'id' => $id,
             ]);
         } catch (Throwable $e) {
-            return Result::fail('Erreur lors de la crÃ©ation de la demande', 500);
+            return Result::fail(lang('Legal.data_request.error'), 500);
         }
     }
 

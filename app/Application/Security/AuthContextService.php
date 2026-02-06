@@ -16,31 +16,31 @@ class AuthContextService
 
         $authHeader = $request->getHeaderLine('Authorization');
         if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-            return Result::unauthorized(['error' => 'Token manquant']);
+            return Result::unauthorized(['error' => lang('Auth.token.missing')]);
         }
 
         $token = $matches[1];
         $decoded = $jwt->decode($token);
 
         if (!$decoded) {
-            return Result::unauthorized(['error' => 'Token invalide ou expirÃ©']);
+            return Result::unauthorized(['error' => lang('Auth.token.invalid_or_expired')]);
         }
 
         if (!isset($decoded->jti)) {
-            return Result::unauthorized(['error' => 'Token invalide']);
+            return Result::unauthorized(['error' => lang('Auth.token.invalid')]);
         }
 
         $blacklist = new TokenBlacklistModel();
         $revoked = $blacklist->where('jti', $decoded->jti)->first();
         if ($revoked) {
-            return Result::unauthorized(['error' => 'Token rÃ©voquÃ©']);
+            return Result::unauthorized(['error' => lang('Auth.token.revoked')]);
         }
 
         $model = new UserModel();
         $user = $model->getUserById($decoded->user_id ?? '');
 
         if (!$user || empty($user['is_active'])) {
-            return Result::unauthorized(['error' => 'Utilisateur inactif ou introuvable']);
+            return Result::unauthorized(['error' => lang('Auth.user.inactive')]);
         }
 
         return Result::ok($user);

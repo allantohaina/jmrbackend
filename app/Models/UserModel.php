@@ -45,21 +45,21 @@ class UserModel extends Model
 
     protected $validationMessages = [
         'email' => [
-            'required' => 'L\'email est requis',
-            'valid_email' => 'L\'email doit être valide',
-            'is_unique' => 'Cet email est déjà utilisé'
+            'required' => 'Users.validation.email.required',
+            'valid_email' => 'Users.validation.email.valid_email',
+            'is_unique' => 'Users.validation.email.is_unique'
         ],
         'password' => [
-            'required' => 'Le mot de passe est requis',
-            'min_length' => 'Le mot de passe doit contenir au moins 8 caractères'
+            'required' => 'Users.validation.password.required',
+            'min_length' => 'Users.validation.password.min_length'
         ],
         'first_name' => [
-            'required' => 'Le prénom est requis',
-            'min_length' => 'Le prénom doit contenir au moins 2 caractères'
+            'required' => 'Users.validation.first_name.required',
+            'min_length' => 'Users.validation.first_name.min_length'
         ],
         'last_name' => [
-            'required' => 'Le nom est requis',
-            'min_length' => 'Le nom doit contenir au moins 2 caractères'
+            'required' => 'Users.validation.last_name.required',
+            'min_length' => 'Users.validation.last_name.min_length'
         ]
     ];
 
