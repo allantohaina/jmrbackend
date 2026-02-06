@@ -41,4 +41,39 @@ class Validation extends BaseConfig
     // --------------------------------------------------------------------
     // Rules
     // --------------------------------------------------------------------
+
+    /**
+     * Image upload validation.
+     * Input name: file
+     */
+    public array $uploadImage = [
+        'file' => 'uploaded[file]|max_size[file,5120]|ext_in[file,jpg,jpeg,png,webp,avif,heic,heif]|mime_in[file,image/jpg,image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif]|is_image[file]',
+    ];
+
+    public array $uploadImage_errors = [
+        'file' => [
+            'uploaded' => 'Validation.upload.image.uploaded',
+            'max_size' => 'Validation.upload.image.max_size',
+            'ext_in' => 'Validation.upload.image.ext_in',
+            'mime_in' => 'Validation.upload.image.mime_in',
+            'is_image' => 'Validation.upload.image.is_image',
+        ],
+    ];
+
+    /**
+     * Document upload validation.
+     * Input name: file
+     */
+    public array $uploadDocument = [
+        'file' => 'uploaded[file]|max_size[file,10240]|ext_in[file,pdf,doc,docx,xls,xlsx,csv,txt]|mime_in[file,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain]',
+    ];
+
+    public array $uploadDocument_errors = [
+        'file' => [
+            'uploaded' => 'Validation.upload.document.uploaded',
+            'max_size' => 'Validation.upload.document.max_size',
+            'ext_in' => 'Validation.upload.document.ext_in',
+            'mime_in' => 'Validation.upload.document.mime_in',
+        ],
+    ];
 }
