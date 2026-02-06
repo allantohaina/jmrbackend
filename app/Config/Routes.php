@@ -45,4 +45,9 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->get('tokens', 'History::tokens');
         $routes->get('projects', 'History::projects');
     });
+
+    $routes->group('uploads', ['filter' => 'auth'], function($routes) {
+        $routes->post('image', 'Uploads::image', ['filter' => 'ratelimit:auth']);
+        $routes->post('document', 'Uploads::document', ['filter' => 'ratelimit:auth']);
+    });
 });

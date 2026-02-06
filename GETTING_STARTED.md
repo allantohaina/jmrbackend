@@ -6,6 +6,7 @@
 - PHP 8.2+ (with mbstring extension enabled)
 - PostgreSQL database
 - Composer
+- PHP file uploads enabled (fileinfo required)
 
 ### Installation Steps
 
@@ -253,6 +254,7 @@ export const config = {
 - [ ] Login endpoint returns valid token
 - [ ] Protected routes require authentication
 - [ ] Admin routes require admin role
+- [ ] Upload endpoints accept allowed types and size limits
 
 ### Frontend (Next.js)
 - [ ] API client is configured
@@ -288,6 +290,16 @@ php spark serve
 1. Check that JWT_SECRET_KEY is set in `.env`
 2. Verify the token is being sent in the `Authorization` header
 3. Make sure the token hasn't expired (24h validity)
+
+### Uploads fail or are truncated
+**Solution:** Align `php.ini` upload limits with app config:
+```ini
+file_uploads = On
+upload_max_filesize = 10M
+post_max_size = 12M
+max_file_uploads = 20
+```
+Then restart the web server.
 
 ### Database connection error
 **Solution:** Verify database credentials in `.env` and ensure PostgreSQL is running.
