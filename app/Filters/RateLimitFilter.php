@@ -2,6 +2,8 @@
 
 namespace App\Filters;
 
+use App\Application\Security\RateLimitService;
+use App\Application\Shared\Result;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -10,67 +12,27 @@ class RateLimitFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        $bucket = is_array($arguments) && isset($arguments[0]) ? (string) $arguments[0] : 'default';
+        $service = new RateLimitService();
+        $result = $service->check($request, $arguments);
 
-        $limits = [
-            'login' => [
-                'max' => (int) (getenv('RATE_LIMIT_LOGIN_MAX') ?: 10),
-                'window' => (int) (getenv('RATE_LIMIT_LOGIN_WINDOW') ?: 60),
-            ],
-            'auth' => [
-                'max' => (int) (getenv('RATE_LIMIT_AUTH_MAX') ?: 30),
-                'window' => (int) (getenv('RATE_LIMIT_AUTH_WINDOW') ?: 60),
-            ],
-            'default' => [
-                'max' => (int) (getenv('RATE_LIMIT_DEFAULT_MAX') ?: 60),
-                'window' => (int) (getenv('RATE_LIMIT_DEFAULT_WINDOW') ?: 60),
-            ],
-        ];
+        $payload = $result->getPayload();
 
-        $limit = $limits[$bucket] ?? $limits['default'];
-
-        $ip = $request->getIPAddress();
-        $cacheKey = 'rl:' . $bucket . ':' . $ip;
-        $now = time();
-
-        $entry = cache()->get($cacheKey);
-        if (!is_array($entry)) {
-            $entry = [
-                'count' => 0,
-                'reset' => $now + $limit['window'],
-            ];
-        }
-
-        if ($now > (int) $entry['reset']) {
-            $entry = [
-                'count' => 0,
-                'reset' => $now + $limit['window'],
-            ];
-        }
-
-        $entry['count']++;
-
-        $remaining = max(0, $limit['max'] - $entry['count']);
-        $retryAfter = max(0, (int) $entry['reset'] - $now);
-
-        cache()->save($cacheKey, $entry, $limit['window']);
-
-        if ($entry['count'] > $limit['max']) {
+        if ($result->getType() === Result::TYPE_FAIL && $result->getStatus() === 429) {
             $response = service('response');
             return $response
                 ->setStatusCode(429)
-                ->setHeader('Retry-After', (string) $retryAfter)
-                ->setHeader('X-RateLimit-Limit', (string) $limit['max'])
+                ->setHeader('Retry-After', (string) ($payload['retry_after'] ?? 0))
+                ->setHeader('X-RateLimit-Limit', (string) ($payload['limit'] ?? 0))
                 ->setHeader('X-RateLimit-Remaining', '0')
                 ->setJSON([
-                    'error' => 'Trop de requêtes, réessayez plus tard.',
-                    'retry_after' => $retryAfter,
+                    'error' => $payload['error'] ?? 'Trop de requÃªtes, rÃ©essayez plus tard.',
+                    'retry_after' => $payload['retry_after'] ?? 0,
                 ]);
         }
 
         service('response')
-            ->setHeader('X-RateLimit-Limit', (string) $limit['max'])
-            ->setHeader('X-RateLimit-Remaining', (string) $remaining);
+            ->setHeader('X-RateLimit-Limit', (string) ($payload['limit'] ?? 0))
+            ->setHeader('X-RateLimit-Remaining', (string) ($payload['remaining'] ?? 0));
 
         return null;
     }
@@ -80,3 +42,4 @@ class RateLimitFilter implements FilterInterface
         return null;
     }
 }
+

@@ -2,6 +2,8 @@
 
 namespace App\Filters;
 
+use App\Application\Security\AdminAuthorizationService;
+use App\Application\Shared\Result;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -10,11 +12,13 @@ class AdminFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        // Check if user is authenticated and is admin
-        if (!isset($request->user) || (($request->user['role'] ?? $request->user->role ?? null) !== 'admin')) {
+        $service = new AdminAuthorizationService();
+        $result = $service->authorize($request->user ?? null);
+
+        if ($result->getType() !== Result::TYPE_OK) {
             return service('response')
-                ->setJSON(['error' => 'Accès refusé. Droits administrateur requis.'])
-                ->setStatusCode(403);
+                ->setJSON($result->getPayload())
+                ->setStatusCode($result->getStatus());
         }
 
         return $request;
@@ -25,3 +29,4 @@ class AdminFilter implements FilterInterface
         // Do nothing
     }
 }
+

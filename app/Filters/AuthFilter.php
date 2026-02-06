@@ -2,63 +2,27 @@
 
 namespace App\Filters;
 
+use App\Application\Security\AuthContextService;
+use App\Application\Shared\Result;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use App\Libraries\JWTLibrary;
-use App\Models\UserModel;
-use App\Models\TokenBlacklistModel;
 
 class AuthFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        $jwt = new JWTLibrary();
-        
-        // Get token from Authorization header
-        $authHeader = $request->getHeaderLine('Authorization');
-        
-        if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+        $service = new AuthContextService();
+        $result = $service->authenticate($request);
+
+        if ($result->getType() !== Result::TYPE_OK) {
             return service('response')
-                ->setJSON(['error' => 'Token manquant'])
-                ->setStatusCode(401);
+                ->setJSON($result->getPayload())
+                ->setStatusCode($result->getStatus());
         }
 
-        $token = $matches[1];
-        $decoded = $jwt->decode($token);
+        $request->user = $result->getPayload();
 
-        if (!$decoded) {
-            return service('response')
-                ->setJSON(['error' => 'Token invalide ou expiré'])
-                ->setStatusCode(401);
-        }
-
-        if (!isset($decoded->jti)) {
-            return service('response')
-                ->setJSON(['error' => 'Token invalide'])
-                ->setStatusCode(401);
-        }
-
-        $blacklist = new TokenBlacklistModel();
-        $revoked = $blacklist->where('jti', $decoded->jti)->first();
-        if ($revoked) {
-            return service('response')
-                ->setJSON(['error' => 'Token révoqué'])
-                ->setStatusCode(401);
-        }
-
-        $model = new UserModel();
-        $user = $model->getUserById($decoded->user_id ?? '');
-
-        if (!$user || empty($user['is_active'])) {
-            return service('response')
-                ->setJSON(['error' => 'Utilisateur inactif ou introuvable'])
-                ->setStatusCode(401);
-        }
-
-        // Store user data in request for later use
-        $request->user = $user;
-        
         return $request;
     }
 
@@ -67,3 +31,4 @@ class AuthFilter implements FilterInterface
         // Do nothing
     }
 }
+
