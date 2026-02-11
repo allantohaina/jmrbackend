@@ -16,6 +16,28 @@ namespace Config;
  */
 class Mimes
 {
+    private const JPEG_TYPES = [
+        'image/jpeg',
+        'image/pjpeg',
+    ];
+
+    private const JP2_TYPES = [
+        'image/jp2',
+        'video/mj2',
+        'image/jpx',
+        'image/jpm',
+    ];
+
+    private const AIFF_TYPES = [
+        'audio/x-aiff',
+        'audio/aiff',
+    ];
+
+    private const HTML_TYPES = [
+        'text/html',
+        'text/plain',
+    ];
+
     /**
      * Map of extensions to mime types.
      *
@@ -161,14 +183,8 @@ class Mimes
             'audio/mpeg3',
             'audio/mp3',
         ],
-        'aif' => [
-            'audio/x-aiff',
-            'audio/aiff',
-        ],
-        'aiff' => [
-            'audio/x-aiff',
-            'audio/aiff',
-        ],
+        'aif' => self::AIFF_TYPES,
+        'aiff' => self::AIFF_TYPES,
         'aifc' => 'audio/x-aiff',
         'ram'  => 'audio/x-pn-realaudio',
         'rm'   => 'audio/x-pn-realaudio',
@@ -194,66 +210,17 @@ class Mimes
             'application/x-win-bitmap',
         ],
         'gif' => 'image/gif',
-        'jpg' => [
-            'image/jpeg',
-            'image/pjpeg',
-        ],
-        'jpeg' => [
-            'image/jpeg',
-            'image/pjpeg',
-        ],
-        'jpe' => [
-            'image/jpeg',
-            'image/pjpeg',
-        ],
-        'jp2' => [
-            'image/jp2',
-            'video/mj2',
-            'image/jpx',
-            'image/jpm',
-        ],
-        'j2k' => [
-            'image/jp2',
-            'video/mj2',
-            'image/jpx',
-            'image/jpm',
-        ],
-        'jpf' => [
-            'image/jp2',
-            'video/mj2',
-            'image/jpx',
-            'image/jpm',
-        ],
-        'jpg2' => [
-            'image/jp2',
-            'video/mj2',
-            'image/jpx',
-            'image/jpm',
-        ],
-        'jpx' => [
-            'image/jp2',
-            'video/mj2',
-            'image/jpx',
-            'image/jpm',
-        ],
-        'jpm' => [
-            'image/jp2',
-            'video/mj2',
-            'image/jpx',
-            'image/jpm',
-        ],
-        'mj2' => [
-            'image/jp2',
-            'video/mj2',
-            'image/jpx',
-            'image/jpm',
-        ],
-        'mjp2' => [
-            'image/jp2',
-            'video/mj2',
-            'image/jpx',
-            'image/jpm',
-        ],
+        'jpg' => self::JPEG_TYPES,
+        'jpeg' => self::JPEG_TYPES,
+        'jpe' => self::JPEG_TYPES,
+        'jp2' => self::JP2_TYPES,
+        'j2k' => self::JP2_TYPES,
+        'jpf' => self::JP2_TYPES,
+        'jpg2' => self::JP2_TYPES,
+        'jpx' => self::JP2_TYPES,
+        'jpm' => self::JP2_TYPES,
+        'mj2' => self::JP2_TYPES,
+        'mjp2' => self::JP2_TYPES,
         'png' => [
             'image/png',
             'image/x-png',
@@ -277,18 +244,9 @@ class Mimes
             'text/css',
             'text/plain',
         ],
-        'html' => [
-            'text/html',
-            'text/plain',
-        ],
-        'htm' => [
-            'text/html',
-            'text/plain',
-        ],
-        'shtml' => [
-            'text/html',
-            'text/plain',
-        ],
+        'html' => self::HTML_TYPES,
+        'htm' => self::HTML_TYPES,
+        'shtml' => self::HTML_TYPES,
         'txt'  => 'text/plain',
         'text' => 'text/plain',
         'log'  => [

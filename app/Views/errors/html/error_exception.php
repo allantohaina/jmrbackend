@@ -3,6 +3,26 @@ use CodeIgniter\HTTP\Header;
 use CodeIgniter\CodeIgniter;
 
 $errorId = uniqid('error', true);
+$renderValue = static function ($value): string {
+    if (is_string($value)) {
+        return esc($value);
+    }
+
+    return '<pre>' . esc(print_r($value, true)) . '</pre>';
+};
+
+$renderHeaderValue = static function ($value): string {
+    if ($value instanceof Header) {
+        return esc($value->getValueLine(), 'html');
+    }
+
+    $output = '';
+    foreach ($value as $i => $header) {
+        $output .= ' (' . ($i + 1) . ') ' . esc($header->getValueLine(), 'html');
+    }
+
+    return $output;
+};
 ?>
 <!doctype html>
 <html>
@@ -178,13 +198,7 @@ $errorId = uniqid('error', true);
                         <?php foreach ($GLOBALS[$var] as $key => $value) : ?>
                             <tr>
                                 <td><?= esc($key) ?></td>
-                                <td>
-                                    <?php if (is_string($value)) : ?>
-                                        <?= esc($value) ?>
-                                    <?php else: ?>
-                                        <pre><?= esc(print_r($value, true)) ?></pre>
-                                    <?php endif; ?>
-                                </td>
+                                <td><?= $renderValue($value) ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
@@ -208,13 +222,7 @@ $errorId = uniqid('error', true);
                         <?php foreach ($constants['user'] as $key => $value) : ?>
                             <tr>
                                 <td><?= esc($key) ?></td>
-                                <td>
-                                    <?php if (is_string($value)) : ?>
-                                        <?= esc($value) ?>
-                                    <?php else: ?>
-                                        <pre><?= esc(print_r($value, true)) ?></pre>
-                                    <?php endif; ?>
-                                </td>
+                                <td><?= $renderValue($value) ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
@@ -283,13 +291,7 @@ $errorId = uniqid('error', true);
                         <?php foreach ($GLOBALS[$var] as $key => $value) : ?>
                             <tr>
                                 <td><?= esc($key) ?></td>
-                                <td>
-                                    <?php if (is_string($value)) : ?>
-                                        <?= esc($value) ?>
-                                    <?php else: ?>
-                                        <pre><?= esc(print_r($value, true)) ?></pre>
-                                    <?php endif; ?>
-                                </td>
+                                <td><?= $renderValue($value) ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
@@ -322,15 +324,7 @@ $errorId = uniqid('error', true);
                             <tr>
                                 <td><?= esc($name, 'html') ?></td>
                                 <td>
-                                <?php
-                                if ($value instanceof Header) {
-                                    echo esc($value->getValueLine(), 'html');
-                                } else {
-                                    foreach ($value as $i => $header) {
-                                        echo ' ('. $i+1 . ') ' . esc($header->getValueLine(), 'html');
-                                    }
-                                }
-                                ?>
+                                <?= $renderHeaderValue($value) ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -369,15 +363,7 @@ $errorId = uniqid('error', true);
                             <tr>
                                 <td><?= esc($name, 'html') ?></td>
                                 <td>
-                                <?php
-                                if ($value instanceof Header) {
-                                    echo esc($response->getHeaderLine($name), 'html');
-                                } else {
-                                    foreach ($value as $i => $header) {
-                                        echo ' ('. $i+1 . ') ' . esc($header->getValueLine(), 'html');
-                                    }
-                                }
-                                ?>
+                                <?= $renderHeaderValue($value instanceof Header ? $response->getHeader($name) : $value) ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

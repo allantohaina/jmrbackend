@@ -3,55 +3,24 @@
 namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
+
 class CreateAuditLogs extends Migration
 {
+    use FieldHelpers;
+
     public function up()
     {
         $this->forge->addField([
-            'id' => [
-                'type' => 'UUID',
-                'null' => false,
-            ],
-            'actor_user_id' => [
-                'type' => 'UUID',
-                'null' => true,
-            ],
-            'action' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
-                'null' => false,
-            ],
-            'entity_type' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
-                'null' => false,
-            ],
-            'entity_id' => [
-                'type' => 'UUID',
-                'null' => true,
-            ],
-            'before_data' => [
-                'type' => 'JSONB',
-                'null' => true,
-            ],
-            'after_data' => [
-                'type' => 'JSONB',
-                'null' => true,
-            ],
-            'ip_address' => [
-                'type' => 'VARCHAR',
-                'constraint' => 64,
-                'null' => true,
-            ],
-            'user_agent' => [
-                'type' => 'VARCHAR',
-                'constraint' => 255,
-                'null' => true,
-            ],
-            'created_at' => [
-                'type' => 'TIMESTAMP',
-                'null' => false,
-            ],
+            'id' => $this->uuidField(),
+            'actor_user_id' => $this->uuidField(true),
+            'action' => $this->varcharField(50),
+            'entity_type' => $this->varcharField(50),
+            'entity_id' => $this->uuidField(true),
+            'before_data' => $this->jsonbField(),
+            'after_data' => $this->jsonbField(),
+            'ip_address' => $this->ipAddressField(),
+            'user_agent' => $this->userAgentField(),
+            'created_at' => $this->timestampField(),
         ]);
         $this->forge->addKey('id', true);
         $this->forge->addKey('actor_user_id');
@@ -59,46 +28,15 @@ class CreateAuditLogs extends Migration
         $this->forge->createTable('audit_logs', true);
 
         $this->forge->addField([
-            'id' => [
-                'type' => 'UUID',
-                'null' => false,
-            ],
-            'user_id' => [
-                'type' => 'UUID',
-                'null' => true,
-            ],
-            'action' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
-                'null' => false,
-            ],
-            'jti' => [
-                'type' => 'VARCHAR',
-                'constraint' => 36,
-                'null' => true,
-            ],
-            'refresh_token_id' => [
-                'type' => 'UUID',
-                'null' => true,
-            ],
-            'meta' => [
-                'type' => 'JSONB',
-                'null' => true,
-            ],
-            'ip_address' => [
-                'type' => 'VARCHAR',
-                'constraint' => 64,
-                'null' => true,
-            ],
-            'user_agent' => [
-                'type' => 'VARCHAR',
-                'constraint' => 255,
-                'null' => true,
-            ],
-            'created_at' => [
-                'type' => 'TIMESTAMP',
-                'null' => false,
-            ],
+            'id' => $this->uuidField(),
+            'user_id' => $this->uuidField(true),
+            'action' => $this->varcharField(50),
+            'jti' => $this->varcharField(36, true),
+            'refresh_token_id' => $this->uuidField(true),
+            'meta' => $this->jsonbField(),
+            'ip_address' => $this->ipAddressField(),
+            'user_agent' => $this->userAgentField(),
+            'created_at' => $this->timestampField(),
         ]);
         $this->forge->addKey('id', true);
         $this->forge->addKey('user_id');
@@ -106,36 +44,13 @@ class CreateAuditLogs extends Migration
         $this->forge->createTable('token_history', true);
 
         $this->forge->addField([
-            'id' => [
-                'type' => 'UUID',
-                'null' => false,
-            ],
-            'project_id' => [
-                'type' => 'UUID',
-                'null' => true,
-            ],
-            'status' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
-                'null' => true,
-            ],
-            'action' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
-                'null' => false,
-            ],
-            'details' => [
-                'type' => 'JSONB',
-                'null' => true,
-            ],
-            'actor_user_id' => [
-                'type' => 'UUID',
-                'null' => true,
-            ],
-            'created_at' => [
-                'type' => 'TIMESTAMP',
-                'null' => false,
-            ],
+            'id' => $this->uuidField(),
+            'project_id' => $this->uuidField(true),
+            'status' => $this->varcharField(50, true),
+            'action' => $this->varcharField(50),
+            'details' => $this->jsonbField(),
+            'actor_user_id' => $this->uuidField(true),
+            'created_at' => $this->timestampField(),
         ]);
         $this->forge->addKey('id', true);
         $this->forge->addKey('project_id');

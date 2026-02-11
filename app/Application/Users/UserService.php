@@ -17,7 +17,6 @@ class UserService
     public function register(array $input, IncomingRequest $request): Result
     {
         $model = new UserModel();
-        $jwt = new JWTLibrary();
 
         $data = [
             'email' => $input['email'] ?? null,
@@ -43,29 +42,21 @@ class UserService
         $userId = $model->getInsertID();
         $user = $model->getUserById($userId);
 
-        $token = $jwt->encode([
-            'user_id' => $user['id'],
-            'email' => $user['email'],
-            'role' => $user['role'],
-            'scopes' => $this->getScopesForRole($user['role']),
-        ]);
-
-        $refreshToken = $this->issueRefreshToken($user['id'], $request);
+        $tokens = $this->issueTokens($user, $request);
 
         (new UserHistory())->logRegister($request, $user);
 
         return Result::created([
             'message' => lang('Users.register.success'),
             'user' => $user,
-            'token' => $token,
-            'refresh_token' => $refreshToken,
+            'token' => $tokens['token'],
+            'refresh_token' => $tokens['refresh_token'],
         ]);
     }
 
     public function login(array $input, IncomingRequest $request): Result
     {
         $model = new UserModel();
-        $jwt = new JWTLibrary();
 
         $email = $input['email'] ?? null;
         $password = $input['password'] ?? null;
@@ -113,22 +104,15 @@ class UserService
         $model->recordLoginSuccess($userRecord['id']);
         $user = $model->getUserById($userRecord['id']);
 
-        $token = $jwt->encode([
-            'user_id' => $user['id'],
-            'email' => $user['email'],
-            'role' => $user['role'],
-            'scopes' => $this->getScopesForRole($user['role']),
-        ]);
-
-        $refreshToken = $this->issueRefreshToken($user['id'], $request);
+        $tokens = $this->issueTokens($user, $request);
 
         (new UserHistory())->logLogin($request, $user);
 
         return Result::ok([
             'message' => lang('Users.login.success'),
             'user' => $user,
-            'token' => $token,
-            'refresh_token' => $refreshToken,
+            'token' => $tokens['token'],
+            'refresh_token' => $tokens['refresh_token'],
         ]);
     }
 
@@ -317,21 +301,17 @@ class UserService
             return Result::notFound(lang('Users.errors.not_found'));
         }
 
-        $jwt = new JWTLibrary();
-        $token = $jwt->encode([
-            'user_id' => $user['id'],
-            'email' => $user['email'],
-            'role' => $user['role'],
-            'scopes' => $this->getScopesForRole($user['role']),
-        ]);
-
-        $newRefresh = $this->issueRefreshToken($user['id'], $request);
+        $tokens = $this->issueTokens($user, $request);
+        $token = $tokens['token'];
+        $newRefresh = $tokens['refresh_token'];
+        $newRefreshId = $this->getRefreshTokenId($newRefresh);
 
         $model->update($record['id'], [
             'revoked_at' => date('Y-m-d H:i:s'),
-            'replaced_by' => $this->getRefreshTokenId($newRefresh),
+            'replaced_by' => $newRefreshId,
         ]);
 
+        $jwt = new JWTLibrary();
         $decoded = $jwt->decode($token);
         $jti = $decoded->jti ?? null;
         (new TokenHistory())->log(
@@ -339,7 +319,7 @@ class UserService
             'refresh',
             $user['id'],
             $jti,
-            $this->getRefreshTokenId($newRefresh),
+            $newRefreshId,
             ['refresh_token_rotated' => true]
         );
 
@@ -402,6 +382,26 @@ class UserService
         }
 
         return $missing;
+    }
+
+    private function issueTokens(array $user, IncomingRequest $request): array
+    {
+        $jwt = new JWTLibrary();
+
+        return [
+            'token' => $jwt->encode($this->buildTokenPayload($user)),
+            'refresh_token' => $this->issueRefreshToken($user['id'], $request),
+        ];
+    }
+
+    private function buildTokenPayload(array $user): array
+    {
+        return [
+            'user_id' => $user['id'],
+            'email' => $user['email'],
+            'role' => $user['role'],
+            'scopes' => $this->getScopesForRole($user['role']),
+        ];
     }
 
     private function issueRefreshToken(string $userId, IncomingRequest $request): string

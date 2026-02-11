@@ -3,51 +3,23 @@
 namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
+
 class CreateLegalTables extends Migration
 {
+    use FieldHelpers;
+
     public function up()
     {
         $this->forge->addField([
-            'id' => [
-                'type' => 'UUID',
-                'null' => false,
-            ],
-            'user_id' => [
-                'type' => 'UUID',
-                'null' => true,
-            ],
-            'subject' => [
-                'type' => 'VARCHAR',
-                'constraint' => 100,
-                'null' => false,
-            ],
-            'version' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
-                'null' => false,
-            ],
-            'granted' => [
-                'type' => 'BOOLEAN',
-                'default' => false,
-            ],
-            'granted_at' => [
-                'type' => 'TIMESTAMP',
-                'null' => true,
-            ],
-            'revoked_at' => [
-                'type' => 'TIMESTAMP',
-                'null' => true,
-            ],
-            'ip_address' => [
-                'type' => 'VARCHAR',
-                'constraint' => 64,
-                'null' => true,
-            ],
-            'user_agent' => [
-                'type' => 'VARCHAR',
-                'constraint' => 255,
-                'null' => true,
-            ],
+            'id' => $this->uuidField(),
+            'user_id' => $this->uuidField(true),
+            'subject' => $this->varcharField(100),
+            'version' => $this->varcharField(50),
+            'granted' => $this->booleanField(false),
+            'granted_at' => $this->timestampField(true),
+            'revoked_at' => $this->timestampField(true),
+            'ip_address' => $this->ipAddressField(),
+            'user_agent' => $this->userAgentField(),
         ]);
         $this->forge->addKey('id', true);
         $this->forge->addKey('user_id');
@@ -55,79 +27,27 @@ class CreateLegalTables extends Migration
         $this->forge->createTable('user_consents', true);
 
         $this->forge->addField([
-            'id' => [
-                'type' => 'UUID',
-                'null' => false,
-            ],
-            'user_id' => [
-                'type' => 'UUID',
-                'null' => true,
-            ],
-            'email' => [
-                'type' => 'VARCHAR',
-                'constraint' => 255,
-                'null' => true,
-            ],
-            'request_type' => [
-                'type' => 'VARCHAR',
-                'constraint' => 50,
-                'null' => false,
-            ],
-            'status' => [
-                'type' => 'VARCHAR',
-                'constraint' => 30,
-                'default' => 'received',
-            ],
-            'details' => [
-                'type' => 'TEXT',
-                'null' => true,
-            ],
-            'created_at' => [
-                'type' => 'TIMESTAMP',
-                'null' => false,
-            ],
-            'updated_at' => [
-                'type' => 'TIMESTAMP',
-                'null' => true,
-            ],
-            'completed_at' => [
-                'type' => 'TIMESTAMP',
-                'null' => true,
-            ],
-            'ip_address' => [
-                'type' => 'VARCHAR',
-                'constraint' => 64,
-                'null' => true,
-            ],
-            'user_agent' => [
-                'type' => 'VARCHAR',
-                'constraint' => 255,
-                'null' => true,
-            ],
+            'id' => $this->uuidField(),
+            'user_id' => $this->uuidField(true),
+            'email' => $this->varcharField(255, true),
+            'request_type' => $this->varcharField(50),
+            'status' => $this->varcharField(30, false, 'received'),
+            'details' => $this->textField(),
+            'created_at' => $this->timestampField(),
+            'updated_at' => $this->timestampField(true),
+            'completed_at' => $this->timestampField(true),
+            'ip_address' => $this->ipAddressField(),
+            'user_agent' => $this->userAgentField(),
         ]);
         $this->forge->addKey('id', true);
         $this->forge->addKey('request_type');
         $this->forge->createTable('data_requests', true);
 
         $this->forge->addField([
-            'id' => [
-                'type' => 'UUID',
-                'null' => false,
-            ],
-            'email' => [
-                'type' => 'VARCHAR',
-                'constraint' => 255,
-                'null' => false,
-            ],
-            'reason' => [
-                'type' => 'VARCHAR',
-                'constraint' => 255,
-                'null' => true,
-            ],
-            'created_at' => [
-                'type' => 'TIMESTAMP',
-                'null' => false,
-            ],
+            'id' => $this->uuidField(),
+            'email' => $this->varcharField(255),
+            'reason' => $this->varcharField(255, true),
+            'created_at' => $this->timestampField(),
         ]);
         $this->forge->addKey('id', true);
         $this->forge->addKey('email');
