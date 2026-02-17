@@ -102,4 +102,64 @@ class Cors extends BaseConfig
          */
         'maxAge' => 7200,
     ];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $allowedOrigins = $this->parseList((string) getenv('CORS_ALLOWED_ORIGINS'));
+        if ($allowedOrigins !== []) {
+            $this->default['allowedOrigins'] = $allowedOrigins;
+        }
+
+        $allowedOriginPatterns = $this->parseList((string) getenv('CORS_ALLOWED_ORIGIN_PATTERNS'));
+        if ($allowedOriginPatterns !== []) {
+            $this->default['allowedOriginsPatterns'] = $allowedOriginPatterns;
+        }
+
+        $allowedHeaders = $this->parseList((string) getenv('CORS_ALLOWED_HEADERS'));
+        if ($allowedHeaders !== []) {
+            $this->default['allowedHeaders'] = $allowedHeaders;
+        }
+
+        $exposedHeaders = $this->parseList((string) getenv('CORS_EXPOSED_HEADERS'));
+        if ($exposedHeaders !== []) {
+            $this->default['exposedHeaders'] = $exposedHeaders;
+        }
+
+        $allowedMethods = $this->parseList((string) getenv('CORS_ALLOWED_METHODS'));
+        if ($allowedMethods !== []) {
+            $this->default['allowedMethods'] = $allowedMethods;
+        }
+
+        $supportsCredentials = getenv('CORS_SUPPORTS_CREDENTIALS');
+        if ($supportsCredentials !== false && $supportsCredentials !== '') {
+            $parsed = filter_var($supportsCredentials, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+            if ($parsed !== null) {
+                $this->default['supportsCredentials'] = $parsed;
+            }
+        }
+
+        $maxAge = getenv('CORS_MAX_AGE');
+        if ($maxAge !== false && $maxAge !== '' && is_numeric($maxAge)) {
+            $this->default['maxAge'] = max(0, (int) $maxAge);
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function parseList(string $value): array
+    {
+        if ($value === '') {
+            return [];
+        }
+
+        $items = array_filter(
+            array_map('trim', explode(',', $value)),
+            static fn (string $item): bool => $item !== '',
+        );
+
+        return array_values($items);
+    }
 }

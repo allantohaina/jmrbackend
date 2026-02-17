@@ -37,6 +37,11 @@
 # database.default.DBDriver = MySQLi
 # database.default.DBPrefix =
 # database.default.port = 3306
+# database.default.pConnect = false
+# database.default.DBDebug = false
+# database.default.strictOn = true
+# database.default.connect_timeout = 5
+# database.default.sslmode = require
 
 # If you use MySQLi as tests, first update the values of Config\Database::$tests.
 # database.tests.hostname = localhost
@@ -67,3 +72,23 @@
 #--------------------------------------------------------------------
 
 # logger.threshold = 4
+
+#--------------------------------------------------------------------
+# CORS
+#--------------------------------------------------------------------
+
+# CORS_ALLOWED_ORIGINS = http://localhost:3000,http://localhost:3001
+# CORS_ALLOWED_ORIGIN_PATTERNS =
+# CORS_ALLOWED_HEADERS = Content-Type,Authorization,X-Requested-With
+# CORS_EXPOSED_HEADERS =
+# CORS_ALLOWED_METHODS = GET,POST,PUT,DELETE,OPTIONS
+# CORS_SUPPORTS_CREDENTIALS = true
+# CORS_MAX_AGE = 7200
+
+#--------------------------------------------------------------------
+# FIREWALL (API)
+#--------------------------------------------------------------------
+
+# FIREWALL_ENABLED = true
+# FIREWALL_ALLOWED_IPS =
+# FIREWALL_BLOCKED_IPS =
