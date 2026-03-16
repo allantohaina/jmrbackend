@@ -2,11 +2,17 @@
 
 namespace App\History;
 
-use App\Models\TokenHistoryModel;
+use App\Application\History\TokenHistory\LogTokenHistoryInput;
+use App\Application\History\TokenHistory\LogTokenHistoryUseCase;
 use CodeIgniter\HTTP\IncomingRequest;
 
 class TokenHistory
 {
+    public function __construct(
+        private readonly ?LogTokenHistoryUseCase $useCase = null
+    ) {
+    }
+
     public function log(
         IncomingRequest $request,
         string $action,
@@ -15,28 +21,19 @@ class TokenHistory
         ?string $refreshTokenId,
         ?array $meta = null
     ): void {
-        $model = new TokenHistoryModel();
-
-        $model->insert([
-            'id' => $this->uuidV4(),
-            'user_id' => $userId,
-            'action' => $action,
-            'jti' => $jti,
-            'refresh_token_id' => $refreshTokenId,
-            'meta' => $meta ? json_encode($meta) : null,
-            'ip_address' => $request->getIPAddress(),
-            'user_agent' => substr((string) $request->getUserAgent(), 0, 255),
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
+        $this->useCase()->execute(new LogTokenHistoryInput(
+            $action,
+            $userId,
+            $jti,
+            $refreshTokenId,
+            $meta,
+            $request->getIPAddress(),
+            substr((string) $request->getUserAgent(), 0, 255)
+        ));
     }
 
-    private function uuidV4(): string
+    private function useCase(): LogTokenHistoryUseCase
     {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
-        $hex = bin2hex($bytes);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split($hex, 4));
+        return $this->useCase ?? service('logTokenHistoryUseCase');
     }
 }

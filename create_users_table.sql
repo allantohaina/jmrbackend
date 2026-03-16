@@ -21,7 +21,6 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 -- Create index on role for admin queries
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 
--- Insert a default admin user (password: admin123)
 INSERT INTO users (email, password_hash, first_name, last_name, role)
 VALUES (
     'admin@jmrtextile.com',

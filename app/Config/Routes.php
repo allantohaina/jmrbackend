@@ -50,4 +50,25 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->post('image', 'Uploads::image', ['filter' => 'ratelimit:auth']);
         $routes->post('document', 'Uploads::document', ['filter' => 'ratelimit:auth']);
     });
+
+    // Production Checklists
+    $routes->group('checklists', ['filter' => 'auth'], function($routes) {
+        $routes->post('/', 'Checklists::create');
+        $routes->post('initialize', 'Checklists::initialize');
+        $routes->post('initialize-command', 'Checklists::initializeCommand');
+        $routes->post('initialize-delivery', 'Checklists::initializeDelivery');
+        $routes->get('(:segment)', 'Checklists::show/$1');
+        $routes->put('(:segment)', 'Checklists::update/$1');
+        $routes->delete('(:segment)/value', 'Checklists::removeValue');
+        $routes->get('project/(:segment)', 'Checklists::project/$1');
+    });
+
+    // Production Assemblages
+    $routes->group('assemblages', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'Assemblages::index');
+        $routes->get('(:segment)', 'Assemblages::show/$1');
+        $routes->post('/', 'Assemblages::create');
+        $routes->put('(:segment)', 'Assemblages::update/$1');
+        $routes->delete('(:segment)', 'Assemblages::delete/$1');
+    });
 });

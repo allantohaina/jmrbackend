@@ -2,6 +2,10 @@
 
 namespace Config;
 
+use App\Application\History\TokenHistory\LogTokenHistoryUseCase;
+use App\Application\Production\Assemblage\AssemblageService;
+use App\Application\Production\Checklist\ChecklistService;
+use App\Infrastructure\History\Persistence\TokenHistoryRepository;
 use CodeIgniter\Config\BaseService;
 
 /**
@@ -19,6 +23,35 @@ use CodeIgniter\Config\BaseService;
  */
 class Services extends BaseService
 {
+    public static function checklistService($getShared = true): ChecklistService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('checklistService');
+        }
+
+        return new ChecklistService();
+    }
+
+    public static function assemblageService($getShared = true): AssemblageService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('assemblageService');
+        }
+
+        return new AssemblageService();
+    }
+
+    public static function logTokenHistoryUseCase($getShared = true): LogTokenHistoryUseCase
+    {
+        if ($getShared) {
+            return static::getSharedInstance('logTokenHistoryUseCase');
+        }
+
+        return new LogTokenHistoryUseCase(
+            new TokenHistoryRepository()
+        );
+    }
+
     /*
      * public static function example($getShared = true)
      * {

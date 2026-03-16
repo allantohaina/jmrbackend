@@ -118,74 +118,22 @@ class UserService
 
     public function profile(?string $userId): Result
     {
-        $model = new UserModel();
-        $user = $model->getUserById((string) $userId);
-
-        if (!$user) {
-            return Result::notFound(lang('Users.errors.not_found'));
-        }
-
-        return Result::ok($user);
+        return $this->findUserById($userId);
     }
 
     public function updateProfile(?string $userId, array $input, IncomingRequest $request): Result
     {
-        $model = new UserModel();
-        $before = $model->getUserById((string) $userId);
-
-        $data = [
-            'first_name' => $input['first_name'] ?? null,
-            'last_name' => $input['last_name'] ?? null,
-            'phone' => $input['phone'] ?? null,
-            'email' => $input['email'] ?? null,
-        ];
-
-        if (array_key_exists('password', $input)) {
-            $data['password'] = $input['password'];
-        }
-
-        $data = array_filter($data, fn($value) => $value !== null);
-
-        $missing = $this->validateRequired($data, ['email', 'first_name', 'last_name']);
-        if (!empty($missing)) {
-            return Result::fail([
-                'error' => lang('Users.errors.required_fields'),
-                'missing' => $missing,
-            ], 400);
-        }
-
-        $rules = $model->getStrictUpdateRules();
-        $rules['email'] = "required|valid_email|is_unique[users.email,id,{$userId}]";
-        $model->setValidationRules($rules);
-
-        if (!$model->updateProfile((string) $userId, $data)) {
-            return Result::fail($model->errors(), 400);
-        }
-
-        $user = $model->getUserById((string) $userId);
-
-        (new UserHistory())->logProfileUpdate($request, (string) $userId, $before, $user);
-
-        return Result::ok([
-            'message' => lang('Users.profile.updated'),
-            'user' => $user,
-        ]);
+        return $this->updateUserRecord((string) $userId, $input, $request, false);
     }
 
     public function deleteProfile(?string $userId, IncomingRequest $request): Result
     {
-        $model = new UserModel();
-        $before = $model->getUserById((string) $userId);
-
-        if (!$model->delete((string) $userId)) {
-            return Result::fail(lang('Users.errors.delete_account'), 500);
-        }
-
-        (new UserHistory())->logProfileDelete($request, (string) $userId, $before);
-
-        return Result::ok([
-            'message' => lang('Users.profile.deleted'),
-        ]);
+        return $this->deleteUserRecord(
+            (string) $userId,
+            static fn($before) => (new UserHistory())->logProfileDelete($request, (string) $userId, $before),
+            'Users.errors.delete_account',
+            'Users.profile.deleted'
+        );
     }
 
     public function listUsers(): Result
@@ -196,85 +144,22 @@ class UserService
 
     public function getUser(?string $id): Result
     {
-        $model = new UserModel();
-        $user = $model->getUserById((string) $id);
-
-        if (!$user) {
-            return Result::notFound(lang('Users.errors.not_found'));
-        }
-
-        return Result::ok($user);
+        return $this->findUserById($id);
     }
 
     public function updateUser(?string $id, array $input, ?string $actorId, IncomingRequest $request): Result
     {
-        $model = new UserModel();
-        $before = $model->getUserById((string) $id);
-
-        $data = [
-            'first_name' => $input['first_name'] ?? null,
-            'last_name' => $input['last_name'] ?? null,
-            'phone' => $input['phone'] ?? null,
-            'email' => $input['email'] ?? null,
-            'role' => $input['role'] ?? null,
-            'is_active' => $input['is_active'] ?? null,
-        ];
-
-        if (array_key_exists('is_active', $data)) {
-            $value = $data['is_active'];
-            if (is_bool($value)) {
-                $data['is_active'] = $value ? 'true' : 'false';
-            } elseif (is_int($value)) {
-                $data['is_active'] = $value ? '1' : '0';
-            }
-        }
-
-        if (array_key_exists('password', $input)) {
-            $data['password'] = $input['password'];
-        }
-
-        $data = array_filter($data, fn($value) => $value !== null);
-
-        $missing = $this->validateRequired($data, ['email', 'first_name', 'last_name']);
-        if (!empty($missing)) {
-            return Result::fail([
-                'error' => lang('Users.errors.required_fields'),
-                'missing' => $missing,
-            ], 400);
-        }
-
-        $rules = $model->getStrictUpdateRules();
-        $rules['email'] = "required|valid_email|is_unique[users.email,id,{$id}]";
-        $model->setValidationRules($rules);
-
-        if (!$model->update((string) $id, $data)) {
-            return Result::fail($model->errors(), 400);
-        }
-
-        $user = $model->getUserById((string) $id);
-
-        (new AdminHistory())->logUserUpdate($request, $actorId, (string) $id, $before, $user);
-
-        return Result::ok([
-            'message' => lang('Users.admin.updated'),
-            'user' => $user,
-        ]);
+        return $this->updateUserRecord((string) $id, $input, $request, true, $actorId);
     }
 
     public function deleteUser(?string $id, ?string $actorId, IncomingRequest $request): Result
     {
-        $model = new UserModel();
-        $before = $model->getUserById((string) $id);
-
-        if (!$model->delete((string) $id)) {
-            return Result::fail(lang('Users.errors.delete_user'), 500);
-        }
-
-        (new AdminHistory())->logUserDelete($request, $actorId, (string) $id, $before);
-
-        return Result::ok([
-            'message' => lang('Users.admin.deleted'),
-        ]);
+        return $this->deleteUserRecord(
+            (string) $id,
+            static fn($before) => (new AdminHistory())->logUserDelete($request, $actorId, (string) $id, $before),
+            'Users.errors.delete_user',
+            'Users.admin.deleted'
+        );
     }
 
     public function refreshToken(?string $refreshToken, IncomingRequest $request): Result
@@ -382,6 +267,119 @@ class UserService
         }
 
         return $missing;
+    }
+
+    private function findUserById(?string $id): Result
+    {
+        $model = new UserModel();
+        $user = $model->getUserById((string) $id);
+
+        if (!$user) {
+            return Result::notFound(lang('Users.errors.not_found'));
+        }
+
+        return Result::ok($user);
+    }
+
+    private function updateUserRecord(
+        string $id,
+        array $input,
+        IncomingRequest $request,
+        bool $isAdminUpdate,
+        ?string $actorId = null
+    ): Result {
+        $model = new UserModel();
+        $before = $model->getUserById($id);
+        $data = $this->prepareUpdateData($input, $isAdminUpdate);
+
+        $missing = $this->validateRequired($data, ['email', 'first_name', 'last_name']);
+        if (!empty($missing)) {
+            return Result::fail([
+                'error' => lang('Users.errors.required_fields'),
+                'missing' => $missing,
+            ], 400);
+        }
+
+        $rules = $model->getStrictUpdateRules();
+        $rules['email'] = "required|valid_email|is_unique[users.email,id,{$id}]";
+        $model->setValidationRules($rules);
+
+        $updated = $isAdminUpdate ? $model->update($id, $data) : $model->updateProfile($id, $data);
+        if (!$updated) {
+            return Result::fail($model->errors(), 400);
+        }
+
+        $user = $model->getUserById($id);
+
+        if ($isAdminUpdate) {
+            (new AdminHistory())->logUserUpdate($request, $actorId, $id, $before, $user);
+
+            return Result::ok([
+                'message' => lang('Users.admin.updated'),
+                'user' => $user,
+            ]);
+        }
+
+        (new UserHistory())->logProfileUpdate($request, $id, $before, $user);
+
+        return Result::ok([
+            'message' => lang('Users.profile.updated'),
+            'user' => $user,
+        ]);
+    }
+
+    private function prepareUpdateData(array $input, bool $includeAdminFields): array
+    {
+        $data = [
+            'first_name' => $input['first_name'] ?? null,
+            'last_name' => $input['last_name'] ?? null,
+            'phone' => $input['phone'] ?? null,
+            'email' => $input['email'] ?? null,
+        ];
+
+        if ($includeAdminFields) {
+            $data['role'] = $input['role'] ?? null;
+            $data['is_active'] = $this->normalizeActiveValue($input['is_active'] ?? null);
+        }
+
+        if (array_key_exists('password', $input)) {
+            $data['password'] = $input['password'];
+        }
+
+        return array_filter($data, static fn($value) => $value !== null);
+    }
+
+    private function normalizeActiveValue(mixed $value): mixed
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_int($value)) {
+            return $value ? '1' : '0';
+        }
+
+        return $value;
+    }
+
+    private function deleteUserRecord(
+        string $id,
+        callable $onDeleted,
+        string $errorMessageKey,
+        string $successMessageKey
+    ): Result {
+        $model = new UserModel();
+        $before = $model->getUserById($id);
+
+        if (!$model->delete($id)) {
+            return Result::fail(lang($errorMessageKey), 500);
+        }
+
+        $onDeleted($before);
+
+        return Result::ok([
+            'message' => lang($successMessageKey),
+        ]);
     }
 
     private function issueTokens(array $user, IncomingRequest $request): array

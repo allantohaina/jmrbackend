@@ -99,7 +99,7 @@ class Cache extends BaseConfig
      * @var array{host?: string, port?: int, weight?: int, raw?: bool}
      */
     public array $memcached = [
-        'host'   => '127.0.0.1',
+        'host'   => 'localhost',
         'port'   => 11211,
         'weight' => 1,
         'raw'    => false,
@@ -124,7 +124,7 @@ class Cache extends BaseConfig
      * }
      */
     public array $redis = [
-        'host'       => '127.0.0.1',
+        'host'       => 'localhost',
         'password'   => null,
         'port'       => 6379,
         'timeout'    => 0,

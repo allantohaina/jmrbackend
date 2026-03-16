@@ -89,7 +89,7 @@ class Filters extends BaseFilters
      * particular HTTP method (GET, POST, etc.).
      *
      * Example:
-     * 'POST' => ['foo', 'bar']
+     * 'POST' => ['ratelimit']
      *
      * If you use this, you should disable auto-routing because auto-routing
      * permits any HTTP method to access a controller. Accessing the controller

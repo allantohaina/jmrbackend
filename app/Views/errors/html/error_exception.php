@@ -125,7 +125,7 @@ $renderHeaderValue = static function ($value): string {
                                 }
                                 ?>
                             <?php else: ?>
-                                {PHP internal code}
+                                PHP internal call
                             <?php endif; ?>
 
                             <!-- Class/Method -->
@@ -243,10 +243,6 @@ $renderHeaderValue = static function ($value): string {
                         <tr>
                             <td>HTTP Method</td>
                             <td><?= esc($request->getMethod()) ?></td>
-                        </tr>
-                        <tr>
-                            <td>IP Address</td>
-                            <td><?= esc($request->getIPAddress()) ?></td>
                         </tr>
                         <tr>
                             <td style="width: 10em">Is AJAX Request?</td>

@@ -2,14 +2,23 @@
 
 namespace App\Exceptions;
 
+use CodeIgniter\Debug\ExceptionHandlerInterface;
 use CodeIgniter\Debug\ExceptionHandler;
 use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
+use Config\Exceptions as ExceptionsConfig;
 use Throwable;
 
-class ApiExceptionHandler extends ExceptionHandler
+class ApiExceptionHandler implements ExceptionHandlerInterface
 {
+    private ExceptionHandler $defaultHandler;
+
+    public function __construct(ExceptionsConfig $config)
+    {
+        $this->defaultHandler = new ExceptionHandler($config);
+    }
+
     public function handle(
         Throwable $exception,
         RequestInterface $request,
@@ -36,7 +45,7 @@ class ApiExceptionHandler extends ExceptionHandler
             return;
         }
 
-        parent::handle($exception, $request, $response, $statusCode, $exitCode);
+        $this->defaultHandler->handle($exception, $request, $response, $statusCode, $exitCode);
     }
 
     private function shouldReturnJson(IncomingRequest $request): bool

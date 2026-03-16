@@ -1,69 +1,111 @@
-# CodeIgniter 4 Application Starter
+# JMR Textile Backend
 
-## What is CodeIgniter?
+Backend API for JMR Textile, built with CodeIgniter 4.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## Overview
+This service provides:
+- JWT authentication (register, login, refresh, logout)
+- User profile management
+- Admin user management
+- Legal endpoints (privacy, terms, cookies, etc.)
+- Audit/history endpoints
+- Authenticated file upload endpoints
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+## Tech Stack
+- PHP 8.2+
+- CodeIgniter 4.7
+- Composer
+- PostgreSQL (default app DB)
+- SQLite in-memory for automated tests
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+## Quick Start
+1. Install dependencies:
+```bash
+composer install
+```
+2. Create your environment file:
+```bash
+# PowerShell
+Copy-Item env .env
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+# Bash
+cp env .env
+```
+3. Configure `.env` (at minimum):
+- `CI_ENVIRONMENT`
+- `app.baseURL`
+- `database.default.*`
+- `JWT_SECRET_KEY`
+4. Run migrations:
+```bash
+php spark migrate
+```
+5. Start the local server:
+```bash
+php spark serve
+```
 
-## Installation & updates
+Local API base URL:
+```text
+http://localhost:8080/api
+```
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+## Main Routes
+Public/Auth:
+- `POST /api/users/register`
+- `POST /api/users/login`
+- `POST /api/users/refresh`
+- `POST /api/users/logout`
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+Authenticated user:
+- `GET /api/users/profile`
+- `PUT /api/users/profile`
+- `DELETE /api/users/profile`
 
-## Setup
+Admin:
+- `GET /api/users`
+- `GET /api/users/{id}`
+- `PUT /api/users/{id}`
+- `DELETE /api/users/{id}`
+- `GET /api/admin/history/audit`
+- `GET /api/admin/history/tokens`
+- `GET /api/admin/history/projects`
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+Legal:
+- `GET /api/legal/privacy`
+- `GET /api/legal/terms`
+- `GET /api/legal/cookies`
+- `GET /api/legal/disclaimer`
+- `GET /api/legal/accessibility`
+- `GET /api/legal/legal-notice`
+- `POST /api/legal/consent`
+- `POST /api/legal/data-request`
 
-## Important Change with index.php
+Uploads (auth required):
+- `POST /api/uploads/image`
+- `POST /api/uploads/document`
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+## Useful Commands
+```bash
+php spark migrate:status
+composer test
+```
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+## Project Structure
+- `app/Controllers` HTTP controllers
+- `app/Application` business services
+- `app/Models` persistence layer
+- `app/History` audit/history logging
+- `app/Filters` auth, admin, firewall, rate limiting
+- `app/Config` runtime configuration
 
-**Please** read the user guide for a better explanation of how CI4 works!
+## Documentation
+- `API_DOCUMENTATION.md`
+- `GETTING_STARTED.md`
 
-## Repository Management
-
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
-
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
-
-## Server Requirements
-
-PHP version 8.2 or higher is required, with the following extensions installed:
-
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
-
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
-
-Additionally, make sure that the following extensions are enabled in your PHP:
-
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+## Production Notes
+- Set `CI_ENVIRONMENT=production`
+- Use a strong `JWT_SECRET_KEY`
+- Restrict CORS origins in `app/Config/Cors.php`
+- Enable HTTPS and secure proxy settings
+- Keep debug output disabled in production
