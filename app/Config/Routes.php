@@ -9,6 +9,10 @@ $routes->get('/', 'Home::index');
 
 // Public routes (no authentication required)
 $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
+    $routes->options('(:any)', static function () {
+        return service('response')->setStatusCode(204);
+    });
+
     $routes->post('users/register', 'Users::register', ['filter' => 'ratelimit:auth']);
     $routes->post('users/login', 'Users::login', ['filter' => 'ratelimit:login']);
     $routes->post('users/refresh', 'Users::refresh', ['filter' => 'ratelimit:auth']);
@@ -51,6 +55,15 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->post('document', 'Uploads::document', ['filter' => 'ratelimit:auth']);
     });
 
+    $routes->group('hr', ['filter' => 'auth'], function($routes) {
+        $routes->group('', ['filter' => 'admin'], function($routes) {
+            $routes->get('lookups/(:segment)', 'Hr::lookup/$1');
+            $routes->get('departements/(:segment)/postes', 'Hr::departmentPostes/$1');
+            $routes->get('departements/(:segment)/manager', 'Hr::departmentManager/$1');
+            $routes->post('employes', 'Hr::createEmploye');
+        });
+    });
+
     // Production Checklists
     $routes->group('checklists', ['filter' => 'auth'], function($routes) {
         $routes->post('/', 'Checklists::create');
@@ -61,6 +74,15 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->put('(:segment)', 'Checklists::update/$1');
         $routes->delete('(:segment)/value', 'Checklists::removeValue');
         $routes->get('project/(:segment)', 'Checklists::project/$1');
+    });
+
+    // Production Workflows
+    $routes->group('workflows', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'ProductionWorkflows::index');
+        $routes->post('/', 'ProductionWorkflows::create');
+        $routes->get('(:segment)', 'ProductionWorkflows::show/$1');
+        $routes->put('(:segment)', 'ProductionWorkflows::update/$1');
+        $routes->post('(:segment)/transition', 'ProductionWorkflows::transition/$1');
     });
 
     // Production Assemblages

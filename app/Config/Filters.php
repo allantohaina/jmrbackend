@@ -38,6 +38,7 @@ class Filters extends BaseFilters
         'admin'         => \App\Filters\AdminFilter::class,
         'ratelimit'     => \App\Filters\RateLimitFilter::class,
         'firewall'      => \App\Filters\FirewallFilter::class,
+        'connectiontrace' => \App\Filters\ConnectionTraceFilter::class,
     ];
 
     /**
@@ -109,6 +110,7 @@ class Filters extends BaseFilters
      * @var array<string, array<string, list<string>>>
      */
     public array $filters = [
+        'connectiontrace' => ['before' => ['api/*'], 'after' => ['api/*']],
         'firewall' => ['before' => ['api/*']],
         'cors'     => [
             'before' => ['api/*'],

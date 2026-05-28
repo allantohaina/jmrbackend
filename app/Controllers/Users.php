@@ -187,6 +187,17 @@ class Users extends ResourceController
             ], $e->getStatusCode());
         }
 
+        log_message(
+            'error',
+            '[Users::{method}] {type}: {message}' . PHP_EOL . '{trace}',
+            [
+                'method' => $this->request->getMethod(),
+                'type' => $e::class,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]
+        );
+
         $unknown = new UnknownException(lang('Common.errors.unexpected'), 0, $e);
 
         return $this->respond([

@@ -27,92 +27,92 @@ class DocTypes
             'xhtml11' => $this->buildPublicDoctype(
                 'html',
                 '-//W3C//DTD XHTML 1.1//EN',
-                'http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd'
+                'https://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd'
             ),
             'xhtml1-strict' => $this->buildPublicDoctype(
                 'html',
                 '-//W3C//DTD XHTML 1.0 Strict//EN',
-                'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'
+                'https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'
             ),
             'xhtml1-trans' => $this->buildPublicDoctype(
                 'html',
                 '-//W3C//DTD XHTML 1.0 Transitional//EN',
-                'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'
+                'https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'
             ),
             'xhtml1-frame' => $this->buildPublicDoctype(
                 'html',
                 '-//W3C//DTD XHTML 1.0 Frameset//EN',
-                'http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd'
+                'https://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd'
             ),
             'xhtml-basic11' => $this->buildPublicDoctype(
                 'html',
                 '-//W3C//DTD XHTML Basic 1.1//EN',
-                'http://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd'
+                'https://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd'
             ),
             'html5' => '<!DOCTYPE html>',
             'html4-strict' => $this->buildPublicDoctype(
                 'html',
                 '-//W3C//DTD HTML 4.01//EN',
-                'http://www.w3.org/TR/html4/strict.dtd'
+                'https://www.w3.org/TR/html4/strict.dtd'
             ),
             'html4-trans' => $this->buildPublicDoctype(
                 'html',
                 '-//W3C//DTD HTML 4.01 Transitional//EN',
-                'http://www.w3.org/TR/html4/loose.dtd'
+                'https://www.w3.org/TR/html4/loose.dtd'
             ),
             'html4-frame' => $this->buildPublicDoctype(
                 'html',
                 '-//W3C//DTD HTML 4.01 Frameset//EN',
-                'http://www.w3.org/TR/html4/frameset.dtd'
+                'https://www.w3.org/TR/html4/frameset.dtd'
             ),
             'mathml1' => $this->buildSystemDoctype(
                 'math',
-                'http://www.w3.org/Math/DTD/mathml1/mathml.dtd'
+                'https://www.w3.org/Math/DTD/mathml1/mathml.dtd'
             ),
             'mathml2' => $this->buildPublicDoctype(
                 'math',
                 '-//W3C//DTD MathML 2.0//EN',
-                'http://www.w3.org/Math/DTD/mathml2/mathml2.dtd'
+                'https://www.w3.org/Math/DTD/mathml2/mathml2.dtd'
             ),
             'svg10' => $this->buildPublicDoctype(
                 'svg',
                 '-//W3C//DTD SVG 1.0//EN',
-                'http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'
+                'https://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'
             ),
             'svg11' => $this->buildPublicDoctype(
                 'svg',
                 '-//W3C//DTD SVG 1.1//EN',
-                'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'
+                'https://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'
             ),
             'svg11-basic' => $this->buildPublicDoctype(
                 'svg',
                 '-//W3C//DTD SVG 1.1 Basic//EN',
-                'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-basic.dtd'
+                'https://www.w3.org/Graphics/SVG/1.1/DTD/svg11-basic.dtd'
             ),
             'svg11-tiny' => $this->buildPublicDoctype(
                 'svg',
                 '-//W3C//DTD SVG 1.1 Tiny//EN',
-                'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'
+                'https://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd'
             ),
             'xhtml-math-svg-xh' => $this->buildPublicDoctype(
                 'html',
                 '-//W3C//DTD XHTML 1.1 plus MathML 2.0 plus SVG 1.1//EN',
-                'http://www.w3.org/2002/04/xhtml-math-svg/xhtml-math-svg.dtd'
+                'https://www.w3.org/2002/04/xhtml-math-svg/xhtml-math-svg.dtd'
             ),
             'xhtml-math-svg-sh' => $this->buildPublicDoctype(
                 'svg:svg',
                 '-//W3C//DTD XHTML 1.1 plus MathML 2.0 plus SVG 1.1//EN',
-                'http://www.w3.org/2002/04/xhtml-math-svg/xhtml-math-svg.dtd'
+                'https://www.w3.org/2002/04/xhtml-math-svg/xhtml-math-svg.dtd'
             ),
             'xhtml-rdfa-1' => $this->buildPublicDoctype(
                 'html',
                 '-//W3C//DTD XHTML+RDFa 1.0//EN',
-                'http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd'
+                'https://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd'
             ),
             'xhtml-rdfa-2' => $this->buildPublicDoctype(
                 'html',
                 '-//W3C//DTD XHTML+RDFa 1.1//EN',
-                'http://www.w3.org/MarkUp/DTD/xhtml-rdfa-2.dtd'
+                'https://www.w3.org/MarkUp/DTD/xhtml-rdfa-2.dtd'
             ),
         ];
     }

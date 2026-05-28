@@ -440,6 +440,10 @@ class UserService
             return ['users:read', 'users:write', 'admin:all'];
         }
 
+        if ($role === 'worker') {
+            return ['users:read', 'atelier:read', 'atelier:write'];
+        }
+
         return ['users:read', 'users:write'];
     }
 

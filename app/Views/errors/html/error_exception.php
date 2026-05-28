@@ -23,6 +23,31 @@ $renderHeaderValue = static function ($value): string {
 
     return $output;
 };
+
+$renderKeyValueTable = static function (
+    iterable $data,
+    callable $valueRenderer,
+    array $tableAttributes = [],
+    ?callable $keyRenderer = null
+): string {
+    if ($keyRenderer === null) {
+        $keyRenderer = static function ($key): string {
+            return esc($key);
+        };
+    }
+
+    $attributes = '';
+    foreach ($tableAttributes as $attribute => $value) {
+        $attributes .= ' ' . $attribute . '="' . esc($value, 'attr') . '"';
+    }
+
+    $rows = '';
+    foreach ($data as $key => $value) {
+        $rows .= '<tr><td>' . $keyRenderer($key) . '</td><td>' . $valueRenderer($value) . '</td></tr>';
+    }
+
+    return '<table' . $attributes . '><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>' . $rows . '</tbody></table>';
+};
 ?>
 <!doctype html>
 <html>
@@ -187,22 +212,7 @@ $renderHeaderValue = static function ($value): string {
 
                     <h3>$<?= esc($var) ?></h3>
 
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Key</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($GLOBALS[$var] as $key => $value) : ?>
-                            <tr>
-                                <td><?= esc($key) ?></td>
-                                <td><?= $renderValue($value) ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                    <?= $renderKeyValueTable($GLOBALS[$var], $renderValue) ?>
 
                 <?php endforeach ?>
 
@@ -211,22 +221,7 @@ $renderHeaderValue = static function ($value): string {
                 <?php if (! empty($constants['user'])) : ?>
                     <h3>Constants</h3>
 
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Key</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($constants['user'] as $key => $value) : ?>
-                            <tr>
-                                <td><?= esc($key) ?></td>
-                                <td><?= $renderValue($value) ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                    <?= $renderKeyValueTable($constants['user'], $renderValue) ?>
                 <?php endif; ?>
             </div>
 
@@ -276,22 +271,7 @@ $renderHeaderValue = static function ($value): string {
 
                     <h3>$<?= esc($var) ?></h3>
 
-                    <table style="width: 100%">
-                        <thead>
-                            <tr>
-                                <th>Key</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($GLOBALS[$var] as $key => $value) : ?>
-                            <tr>
-                                <td><?= esc($key) ?></td>
-                                <td><?= $renderValue($value) ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                    <?= $renderKeyValueTable($GLOBALS[$var], $renderValue, ['style' => 'width: 100%']) ?>
 
                 <?php endforeach ?>
 
@@ -308,24 +288,14 @@ $renderHeaderValue = static function ($value): string {
 
                     <h3>Headers</h3>
 
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Header</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($headers as $name => $value) : ?>
-                            <tr>
-                                <td><?= esc($name, 'html') ?></td>
-                                <td>
-                                <?= $renderHeaderValue($value) ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                    <?= $renderKeyValueTable(
+                        $headers,
+                        $renderHeaderValue,
+                        [],
+                        static function ($key): string {
+                            return esc($key, 'html');
+                        }
+                    ) ?>
 
                 <?php endif; ?>
             </div>
@@ -347,24 +317,20 @@ $renderHeaderValue = static function ($value): string {
                 <?php if (! empty($headers)) : ?>
                     <h3>Headers</h3>
 
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Header</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($headers as $name => $value) : ?>
-                            <tr>
-                                <td><?= esc($name, 'html') ?></td>
-                                <td>
-                                <?= $renderHeaderValue($value instanceof Header ? $response->getHeader($name) : $value) ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                    <?php
+                        $normalizedHeaders = [];
+                        foreach ($headers as $name => $value) {
+                            $normalizedHeaders[$name] = $value instanceof Header ? $response->getHeader($name) : $value;
+                        }
+                    ?>
+                    <?= $renderKeyValueTable(
+                        $normalizedHeaders,
+                        $renderHeaderValue,
+                        [],
+                        static function ($key): string {
+                            return esc($key, 'html');
+                        }
+                    ) ?>
 
                 <?php endif; ?>
             </div>

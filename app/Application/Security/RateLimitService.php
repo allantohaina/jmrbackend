@@ -29,7 +29,7 @@ class RateLimitService
         $limit = $limits[$bucket] ?? $limits['default'];
 
         $ip = $request->getIPAddress();
-        $cacheKey = 'rl:' . $bucket . ':' . $ip;
+        $cacheKey = $this->cacheKey($bucket, $ip);
         $now = time();
 
         $entry = cache()->get($cacheKey);
@@ -68,6 +68,11 @@ class RateLimitService
             'remaining' => $remaining,
             'retry_after' => $retryAfter,
         ]);
+    }
+
+    private function cacheKey(string $bucket, string $ip): string
+    {
+        return 'rl_' . hash('sha256', $bucket . '|' . $ip);
     }
 }
 

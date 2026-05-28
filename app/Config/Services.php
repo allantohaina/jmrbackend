@@ -5,6 +5,7 @@ namespace Config;
 use App\Application\History\TokenHistory\LogTokenHistoryUseCase;
 use App\Application\Production\Assemblage\AssemblageService;
 use App\Application\Production\Checklist\ChecklistService;
+use App\Application\Production\Workflow\ProductionWorkflowService;
 use App\Infrastructure\History\Persistence\TokenHistoryRepository;
 use CodeIgniter\Config\BaseService;
 
@@ -30,6 +31,15 @@ class Services extends BaseService
         }
 
         return new ChecklistService();
+    }
+
+    public static function productionWorkflowService($getShared = true): ProductionWorkflowService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('productionWorkflowService');
+        }
+
+        return new ProductionWorkflowService();
     }
 
     public static function assemblageService($getShared = true): AssemblageService

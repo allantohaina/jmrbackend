@@ -40,7 +40,7 @@ class UserModel extends Model
         'first_name' => 'required|min_length[2]|max_length[100]',
         'last_name' => 'required|min_length[2]|max_length[100]',
         'phone' => 'permit_empty|max_length[20]',
-        'role' => 'permit_empty|in_list[admin,user]',
+        'role' => 'permit_empty|in_list[admin,user,worker]',
     ];
 
     protected $validationMessages = [
@@ -192,7 +192,7 @@ class UserModel extends Model
             'first_name' => 'required|min_length[2]|max_length[100]',
             'last_name' => 'required|min_length[2]|max_length[100]',
             'phone' => 'permit_empty|max_length[20]',
-            'role' => 'permit_empty|in_list[admin,user]',
+            'role' => 'permit_empty|in_list[admin,user,worker]',
             'is_active' => 'permit_empty|in_list[0,1,true,false]',
         ];
     }
