@@ -111,10 +111,11 @@ class Filters extends BaseFilters
      */
     public array $filters = [
         'connectiontrace' => ['before' => ['api/*'], 'after' => ['api/*']],
-        'firewall' => ['before' => ['api/*']],
+        // 'firewall' => ['before' => ['api/*']], // Temporairement désactivé pour le développement
         'cors'     => [
             'before' => ['api/*'],
             'after'  => ['api/*'],
         ],
+        // 'ratelimit' => ['before' => ['api/users/register', 'api/users/login']], // Temporairement désactivé pour le développement
     ];
 }

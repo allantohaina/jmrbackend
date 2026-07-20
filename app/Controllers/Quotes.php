@@ -2,13 +2,117 @@
 
 namespace App\Controllers;
 
-use App\Controllers\BaseController;
+use App\Application\Quotes\QuoteService;
 use CodeIgniter\HTTP\ResponseInterface;
+use CodeIgniter\RESTful\ResourceController;
+use Throwable;
 
-class Quotes extends BaseController
+class Quotes extends ResourceController
 {
-    public function index()
+    protected $format = 'json';
+
+    private ?QuoteService $quoteService = null;
+
+    private function quoteService(): QuoteService
     {
-        //
+        if ($this->quoteService === null) {
+            $this->quoteService = new QuoteService();
+        }
+
+        return $this->quoteService;
+    }
+
+    public function index(): ResponseInterface
+    {
+        try {
+            $result = $this->quoteService()->list($this->request);
+            return $this->respond($result->getPayload(), $result->getStatus());
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes index error: ' . $e->getMessage());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
+    public function create(): ResponseInterface
+    {
+        try {
+            $input = $this->getInputData();
+            $result = $this->quoteService()->create($input, $this->request);
+
+            if ($result->isSuccess()) {
+                return $this->respondCreated($result->getPayload());
+            }
+
+            return $this->fail($result->getPayload(), $result->getStatus());
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes create error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
+    public function updateStatus($id = null): ResponseInterface
+    {
+        try {
+            $input = $this->getInputData();
+            $status = $input['status'] ?? null;
+            $additionalData = array_filter($input, fn($key) => !in_array($key, ['status']), ARRAY_FILTER_USE_KEY);
+
+            $result = $this->quoteService()->updateStatus($id, $status, $additionalData);
+
+            if ($result->isSuccess()) {
+                return $this->respond($result->getPayload());
+            }
+
+            return $this->fail($result->getPayload(), $result->getStatus());
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes updateStatus error: ' . $e->getMessage());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
+    public function notifications(): ResponseInterface
+    {
+        try {
+            // Get user from auth context if available
+            $userId = $this->request->user['id'] ?? null;
+            $notifications = $this->quoteService()->getNotifications($userId);
+
+            return $this->respond(['data' => $notifications]);
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes notifications error: ' . $e->getMessage());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
+    public function markNotificationRead($id = null): ResponseInterface
+    {
+        try {
+            $result = $this->quoteService()->markAsRead($id);
+
+            if ($result->isSuccess()) {
+                return $this->respond($result->getPayload());
+            }
+
+            return $this->fail($result->getPayload(), $result->getStatus());
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes markNotificationRead error: ' . $e->getMessage());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
+    private function getInputData(): array
+    {
+        $json = $this->request->getJSON(true);
+        if (is_array($json)) {
+            return $json;
+        }
+
+        $raw = $this->request->getRawInput();
+        if (is_array($raw) && !empty($raw)) {
+            return $raw;
+        }
+
+        $post = $this->request->getPost();
+        return is_array($post) ? $post : [];
     }
 }

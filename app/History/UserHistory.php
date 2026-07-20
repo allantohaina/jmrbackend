@@ -2,16 +2,16 @@
 
 namespace App\History;
 
-use CodeIgniter\HTTP\IncomingRequest;
+use CodeIgniter\HTTP\RequestInterface;
 
 class UserHistory extends BaseHistory
 {
-    public function logRegister(IncomingRequest $request, array $user): void
+    public function logRegister(RequestInterface $request, array $user): void
     {
         $this->audit($request, 'user.register', 'users', $user['id'] ?? null, null, $user, $user['id'] ?? null);
     }
 
-    public function logLogin(IncomingRequest $request, array $user): void
+    public function logLogin(RequestInterface $request, array $user): void
     {
         $this->audit($request, 'user.login', 'users', $user['id'] ?? null, null, [
             'email' => $user['email'] ?? null,
@@ -19,7 +19,7 @@ class UserHistory extends BaseHistory
         ], $user['id'] ?? null);
     }
 
-    public function logLoginFailed(IncomingRequest $request, ?string $email, ?string $userId, string $reason): void
+    public function logLoginFailed(RequestInterface $request, ?string $email, ?string $userId, string $reason): void
     {
         $this->audit($request, 'user.login.failed', 'users', $userId, null, [
             'email' => $email,
@@ -27,12 +27,12 @@ class UserHistory extends BaseHistory
         ], $userId);
     }
 
-    public function logProfileUpdate(IncomingRequest $request, string $userId, ?array $before, ?array $after): void
+    public function logProfileUpdate(RequestInterface $request, string $userId, ?array $before, ?array $after): void
     {
         $this->audit($request, 'user.profile.update', 'users', $userId, $before, $after, $userId);
     }
 
-    public function logProfileDelete(IncomingRequest $request, string $userId, ?array $before): void
+    public function logProfileDelete(RequestInterface $request, string $userId, ?array $before): void
     {
         $this->audit($request, 'user.profile.delete', 'users', $userId, $before, null, $userId);
     }

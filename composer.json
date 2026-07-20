@@ -12,7 +12,9 @@
     "require": {
         "php": "^8.2",
         "codeigniter4/framework": "^4.7",
-        "league/mime-type-detection": "^1.16"
+        "league/mime-type-detection": "^1.16",
+        "rafaelwendel/ci4formbuilder": "^0.0.4",
+        "stymiee/email-validator": "^2.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9",

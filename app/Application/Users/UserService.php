@@ -10,20 +10,52 @@ use App\Libraries\JWTLibrary;
 use App\Models\RefreshTokenModel;
 use App\Models\TokenBlacklistModel;
 use App\Models\UserModel;
-use CodeIgniter\HTTP\IncomingRequest;
+use CodeIgniter\HTTP\RequestInterface;
+use EmailValidator\EmailValidator;
 
 class UserService
 {
-    public function register(array $input, IncomingRequest $request): Result
+    private function verifyEmail(string $email): Result
+    {
+        try {
+            $emailValidator = new EmailValidator([
+                'checkMxRecords' => true,
+                'checkDisposableEmail' => true,
+            ]);
+
+            $isValid = $emailValidator->validate($email);
+
+            if (!$isValid) {
+                $errorReason = $emailValidator->getErrorReason();
+                return Result::fail([
+                    'error' => 'L\'adresse e-mail n\'est pas valide.',
+                    'reason' => $errorReason,
+                ], 400);
+            }
+
+            return Result::ok();
+        } catch (\Exception $e) {
+            log_message('error', 'Email validation failed: ' . $e->getMessage());
+            // If validation fails for any reason, skip to not block users
+            return Result::ok();
+        }
+    }
+
+    public function register(array $input, RequestInterface $request): Result
     {
         $model = new UserModel();
 
+        $email = $input['email'] ?? null;
+
         $data = [
-            'email' => $input['email'] ?? null,
+            'email' => $email,
             'password' => $input['password'] ?? null,
             'first_name' => $input['first_name'] ?? null,
             'last_name' => $input['last_name'] ?? null,
             'phone' => $input['phone'] ?? null,
+            'birth_date' => $input['birth_date'] ?? null,
+            'country' => $input['country'] ?? null,
+            'address' => $input['address'] ?? null,
             'role' => 'user',
         ];
 
@@ -33,6 +65,23 @@ class UserService
                 'error' => lang('Users.errors.required_fields'),
                 'missing' => $missing,
             ], 400);
+        }
+
+        // Verify email with EmailValidator
+        $emailVerification = $this->verifyEmail($email);
+        if (!$emailVerification->isSuccess()) {
+            return $emailVerification;
+        }
+
+        // Sanitize email to avoid duplicates (remove Gmail plus trick
+        try {
+            $emailValidator = new EmailValidator();
+            $emailValidator->validate($email);
+            if ($emailValidator->isGmailWithPlusChar()) {
+                $data['email'] = $emailValidator->getGmailAddressWithoutPlus();
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to sanitize email: ' . $e->getMessage());
         }
 
         if (!$model->insert($data)) {
@@ -54,7 +103,7 @@ class UserService
         ]);
     }
 
-    public function login(array $input, IncomingRequest $request): Result
+    public function login(array $input, RequestInterface $request): Result
     {
         $model = new UserModel();
 
@@ -121,12 +170,12 @@ class UserService
         return $this->findUserById($userId);
     }
 
-    public function updateProfile(?string $userId, array $input, IncomingRequest $request): Result
+    public function updateProfile(?string $userId, array $input, RequestInterface $request): Result
     {
         return $this->updateUserRecord((string) $userId, $input, $request, false);
     }
 
-    public function deleteProfile(?string $userId, IncomingRequest $request): Result
+    public function deleteProfile(?string $userId, RequestInterface $request): Result
     {
         return $this->deleteUserRecord(
             (string) $userId,
@@ -147,12 +196,12 @@ class UserService
         return $this->findUserById($id);
     }
 
-    public function updateUser(?string $id, array $input, ?string $actorId, IncomingRequest $request): Result
+    public function updateUser(?string $id, array $input, ?string $actorId, RequestInterface $request): Result
     {
         return $this->updateUserRecord((string) $id, $input, $request, true, $actorId);
     }
 
-    public function deleteUser(?string $id, ?string $actorId, IncomingRequest $request): Result
+    public function deleteUser(?string $id, ?string $actorId, RequestInterface $request): Result
     {
         return $this->deleteUserRecord(
             (string) $id,
@@ -162,7 +211,7 @@ class UserService
         );
     }
 
-    public function refreshToken(?string $refreshToken, IncomingRequest $request): Result
+    public function refreshToken(?string $refreshToken, RequestInterface $request): Result
     {
         if (!$refreshToken) {
             return Result::fail(lang('Users.refresh.required'), 400);
@@ -214,7 +263,7 @@ class UserService
         ]);
     }
 
-    public function logout(?string $refreshToken, ?string $authHeader, IncomingRequest $request): Result
+    public function logout(?string $refreshToken, ?string $authHeader, RequestInterface $request): Result
     {
         if ($refreshToken) {
             $model = new RefreshTokenModel();
@@ -284,7 +333,7 @@ class UserService
     private function updateUserRecord(
         string $id,
         array $input,
-        IncomingRequest $request,
+        RequestInterface $request,
         bool $isAdminUpdate,
         ?string $actorId = null
     ): Result {
@@ -382,7 +431,7 @@ class UserService
         ]);
     }
 
-    private function issueTokens(array $user, IncomingRequest $request): array
+    private function issueTokens(array $user, RequestInterface $request): array
     {
         $jwt = new JWTLibrary();
 
@@ -402,13 +451,17 @@ class UserService
         ];
     }
 
-    private function issueRefreshToken(string $userId, IncomingRequest $request): string
+    private function issueRefreshToken(string $userId, RequestInterface $request): string
     {
         $model = new RefreshTokenModel();
         $token = bin2hex(random_bytes(32));
         $hash = hash('sha256', $token);
         $expiresAt = time() + (int) (getenv('JWT_REFRESH_TTL') ?: 60 * 60 * 24 * 30);
         $id = $this->uuidV4();
+
+        // Handle CLIRequest which may not have all methods
+        $ipAddress = method_exists($request, 'getIPAddress') ? $request->getIPAddress() : '127.0.0.1';
+        $userAgent = method_exists($request, 'getUserAgent') ? substr((string) $request->getUserAgent(), 0, 255) : 'CLI';
 
         $model->insert([
             'id' => $id,
@@ -418,8 +471,8 @@ class UserService
             'revoked_at' => null,
             'replaced_by' => null,
             'created_at' => date('Y-m-d H:i:s'),
-            'ip_address' => $request->getIPAddress(),
-            'user_agent' => substr((string) $request->getUserAgent(), 0, 255),
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
         ]);
 
         return $token;

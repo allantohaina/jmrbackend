@@ -18,6 +18,9 @@ class UserModel extends Model
         'first_name',
         'last_name',
         'phone',
+        'birth_date',
+        'country',
+        'address',
         'role',
         'is_active',
         'failed_login_count',
@@ -40,6 +43,9 @@ class UserModel extends Model
         'first_name' => 'required|min_length[2]|max_length[100]',
         'last_name' => 'required|min_length[2]|max_length[100]',
         'phone' => 'permit_empty|max_length[20]',
+        'birth_date' => 'permit_empty|valid_date',
+        'country' => 'permit_empty|max_length[2]',
+        'address' => 'permit_empty|max_length[255]',
         'role' => 'permit_empty|in_list[admin,user,worker]',
     ];
 

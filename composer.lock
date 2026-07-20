@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8dbc9d537fc6b7cc3d7ffa09d0fcc2b2",
+    "content-hash": "09542c33695378e6bb028072e1c13d19",
     "packages": [
         {
             "name": "codeigniter4/framework",
@@ -249,6 +249,123 @@
                 "source": "https://github.com/php-fig/log/tree/3.0.2"
             },
             "time": "2024-09-11T13:17:53+00:00"
+        },
+        {
+            "name": "rafaelwendel/ci4formbuilder",
+            "version": "0.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/rafaelwendel/CI4FormBuilder.git",
+                "reference": "543bf799ae9cdc5b4fd24aa949bba73352aef656"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/rafaelwendel/CI4FormBuilder/zipball/543bf799ae9cdc5b4fd24aa949bba73352aef656",
+                "reference": "543bf799ae9cdc5b4fd24aa949bba73352aef656",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.4 || ^8.0"
+            },
+            "require-dev": {
+                "codeigniter4/framework": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "CI4FormBuilder\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Rafael Wendel Pinheiro",
+                    "email": "rafaelwendel@hotmail.com"
+                }
+            ],
+            "description": "Library to build and manage forms in a CodeIgniter 4 projects (Object-Oriented way).",
+            "homepage": "https://github.com/rafaelwendel/CI4FormBuilder",
+            "keywords": [
+                "builder",
+                "codeigniter4",
+                "form",
+                "php"
+            ],
+            "support": {
+                "issues": "https://github.com/rafaelwendel/CI4FormBuilder/issues",
+                "source": "https://github.com/rafaelwendel/CI4FormBuilder/tree/0.0.4"
+            },
+            "time": "2026-05-01T20:10:54+00:00"
+        },
+        {
+            "name": "stymiee/email-validator",
+            "version": "2.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/stymiee/email-validator.git",
+                "reference": "8ee3be76b3d01081d3a91259c118e5dc2b4fb424"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/stymiee/email-validator/zipball/8ee3be76b3d01081d3a91259c118e5dc2b4fb424",
+                "reference": "8ee3be76b3d01081d3a91259c118e5dc2b4fb424",
+                "shasum": ""
+            },
+            "require": {
+                "ext-intl": "*",
+                "ext-json": "*",
+                "php": ">=7.4"
+            },
+            "require-dev": {
+                "nunomaduro/phpinsights": "^2.8",
+                "phpmd/phpmd": "^2.15",
+                "phpstan/phpstan": "^1.10",
+                "phpunit/phpunit": "^9.6",
+                "squizlabs/php_codesniffer": "^3.7",
+                "vimeo/psalm": "^5.15"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "EmailValidator\\": "src/EmailValidator/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "John Conde",
+                    "email": "stymiee@gmail.com",
+                    "homepage": "https://stymiee.dev",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A robust PHP 7.4+ email validation library that extends beyond basic validation with MX record checks, disposable email detection, and free email provider validation. Features include strict typing, custom validator support, internationalization (i18n), and an extensible architecture. Perfect for applications requiring thorough email verification with customizable validation rules.",
+            "homepage": "https://github.com/stymiee/email-validator",
+            "keywords": [
+                "MX",
+                "custom-validators",
+                "disposable",
+                "email",
+                "email-verification",
+                "free-email",
+                "i18n",
+                "internationalization",
+                "php",
+                "strict-typing",
+                "type-safe",
+                "validation"
+            ],
+            "support": {
+                "issues": "https://github.com/stymiee/email-validator/issues",
+                "source": "https://github.com/stymiee/email-validator/tree/2.1.0"
+            },
+            "time": "2025-06-11T00:31:58+00:00"
         }
     ],
     "packages-dev": [

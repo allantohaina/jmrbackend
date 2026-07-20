@@ -22,7 +22,7 @@ final class Result
         $this->status = $status;
     }
 
-    public static function ok(mixed $payload, int $status = 200): self
+    public static function ok(mixed $payload = null, int $status = 200): self
     {
         return new self(self::TYPE_OK, $payload, $status);
     }
@@ -65,6 +65,11 @@ final class Result
     public function getStatus(): int
     {
         return $this->status;
+    }
+
+    public function isSuccess(): bool
+    {
+        return in_array($this->type, [self::TYPE_OK, self::TYPE_CREATED]);
     }
 }
 

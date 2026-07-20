@@ -55,15 +55,6 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->post('document', 'Uploads::document', ['filter' => 'ratelimit:auth']);
     });
 
-    $routes->group('hr', ['filter' => 'auth'], function($routes) {
-        $routes->group('', ['filter' => 'admin'], function($routes) {
-            $routes->get('lookups/(:segment)', 'Hr::lookup/$1');
-            $routes->get('departements/(:segment)/postes', 'Hr::departmentPostes/$1');
-            $routes->get('departements/(:segment)/manager', 'Hr::departmentManager/$1');
-            $routes->post('employes', 'Hr::createEmploye');
-        });
-    });
-
     // Production Checklists
     $routes->group('checklists', ['filter' => 'auth'], function($routes) {
         $routes->post('/', 'Checklists::create');
@@ -84,6 +75,21 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->put('(:segment)', 'ProductionWorkflows::update/$1');
         $routes->post('(:segment)/transition', 'ProductionWorkflows::transition/$1');
     });
+
+    // Quotes
+    $routes->group('quotes', function($routes) {
+        $routes->post('/', 'Quotes::create'); // Public for creating quote requests
+        $routes->group('', ['filter' => 'auth'], function($routes) {
+            $routes->get('/', 'Quotes::index');
+            $routes->put('(:segment)/status', 'Quotes::updateStatus/$1');
+            $routes->get('notifications', 'Quotes::notifications');
+            $routes->put('notifications/(:segment)/read', 'Quotes::markNotificationRead/$1');
+        });
+    });
+
+    // Site content (public read, admin write)
+    $routes->get('content', 'Content::index');
+    $routes->put('content/(:any)', 'Content::update/$1', ['filter' => 'auth']);
 
     // Production Assemblages
     $routes->group('assemblages', ['filter' => 'auth'], function($routes) {

@@ -1,0 +1,3 @@
+Log Token History Use Case (Tests\Unit\LogTokenHistoryUseCase)
+ [x] It builds and persists token history event
+

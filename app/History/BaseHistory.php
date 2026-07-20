@@ -3,12 +3,12 @@
 namespace App\History;
 
 use App\Libraries\AuditLogger;
-use CodeIgniter\HTTP\IncomingRequest;
+use CodeIgniter\HTTP\RequestInterface;
 
 class BaseHistory
 {
     protected function audit(
-        IncomingRequest $request,
+        RequestInterface $request,
         string $action,
         string $entityType,
         ?string $entityId,
@@ -16,6 +16,10 @@ class BaseHistory
         ?array $after,
         ?string $actorUserId
     ): void {
+        // Handle CLIRequest which may not have all methods
+        $ipAddress = method_exists($request, 'getIPAddress') ? $request->getIPAddress() : '127.0.0.1';
+        $userAgent = method_exists($request, 'getUserAgent') ? substr((string) $request->getUserAgent(), 0, 255) : 'CLI';
+        
         AuditLogger::log([
             'id' => $this->uuidV4(),
             'actor_user_id' => $actorUserId,
@@ -24,8 +28,8 @@ class BaseHistory
             'entity_id' => $entityId,
             'before_data' => $before ? json_encode($before) : null,
             'after_data' => $after ? json_encode($after) : null,
-            'ip_address' => $request->getIPAddress(),
-            'user_agent' => substr((string) $request->getUserAgent(), 0, 255),
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
             'created_at' => date('Y-m-d H:i:s'),
         ]);
     }
