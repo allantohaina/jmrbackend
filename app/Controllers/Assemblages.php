@@ -23,7 +23,7 @@ class Assemblages extends ResourceController
     {
         $projectId = $this->request->getGet('project_id');
         if (!$projectId) {
-            return $this->fail('Project ID is required.', 400);
+            return $this->fail('L\'identifiant du projet est requis.', 400);
         }
         $result = $this->service()->getByProject($projectId);
         return $this->respond($result->getPayload());

@@ -45,7 +45,7 @@ class Blacklist extends ResourceController
 
         $model = new BlacklistModel();
         if (!$model->insert($data)) {
-            return $this->failServerError('Failed to add blacklist entry.');
+            return $this->failServerError('Erreur lors de l\'ajout à la blacklist.');
         }
 
         $id = $model->getInsertID();

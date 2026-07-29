@@ -71,7 +71,7 @@ class Bans extends ResourceController
         ];
 
         if (!$model->insert($data)) {
-            return $this->failServerError('Failed to create ban.');
+            return $this->failServerError('Erreur lors de la création du bannissement.');
         }
 
         $banId = $model->getInsertID();
