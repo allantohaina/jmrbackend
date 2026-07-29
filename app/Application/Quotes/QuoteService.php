@@ -98,6 +98,12 @@ class QuoteService
         return Result::ok($updatedQuote);
     }
 
+    public function getQuoteById(string $id): ?array
+    {
+        $model = new QuoteModel();
+        return $model->getQuoteById($id);
+    }
+
     public function getNotifications(?string $userId): array
     {
         // For now, return empty array, can be expanded later

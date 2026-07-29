@@ -79,8 +79,10 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
     // Quotes
     $routes->group('quotes', function($routes) {
         $routes->post('/', 'Quotes::create'); // Public for creating quote requests
+        $routes->get('share/(:any)', 'Quotes::share/$1'); // Public share by hash
         $routes->group('', ['filter' => 'auth'], function($routes) {
             $routes->get('/', 'Quotes::index');
+            $routes->get('(:segment)', 'Quotes::show/$1');
             $routes->put('(:segment)/status', 'Quotes::updateStatus/$1');
             $routes->get('notifications', 'Quotes::notifications');
             $routes->put('notifications/(:segment)/read', 'Quotes::markNotificationRead/$1');

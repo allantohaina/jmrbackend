@@ -50,6 +50,44 @@ class Quotes extends ResourceController
         }
     }
 
+    public function show($id = null): ResponseInterface
+    {
+        try {
+            $result = $this->quoteService()->getQuoteById($id);
+            if (!$result) {
+                return $this->failNotFound('Devis introuvable');
+            }
+            return $this->respond($result);
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes show error: ' . $e->getMessage());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
+    public function share($hash = null): ResponseInterface
+    {
+        try {
+            $result = $this->quoteService()->getQuoteById($hash);
+            if (!$result) {
+                return $this->failNotFound('Devis introuvable');
+            }
+            // Only expose safe fields for public view
+            return $this->respond([
+                'id' => $result['id'],
+                'name' => $result['name'],
+                'category' => $result['category'],
+                'status' => $result['status'],
+                'amount' => $result['amount'],
+                'deposit_paid' => $result['deposit_paid'],
+                'balance_paid' => $result['balance_paid'],
+                'created_at' => $result['created_at'],
+            ]);
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes share error: ' . $e->getMessage());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
     public function updateStatus($id = null): ResponseInterface
     {
         try {
