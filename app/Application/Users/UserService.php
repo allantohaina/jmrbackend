@@ -9,6 +9,7 @@ use App\History\UserHistory;
 use App\Libraries\JWTLibrary;
 use App\Models\BanModel;
 use App\Models\BlacklistModel;
+use App\Models\IpBlocklistModel;
 use App\Models\RefreshTokenModel;
 use App\Models\TokenBlacklistModel;
 use App\Models\UserModel;
@@ -122,12 +123,20 @@ class UserService
             return Result::fail(lang('Users.login.required'), 400);
         }
 
+        $ip = $request->getIPAddress();
+        $ipBlocklistModel = new IpBlocklistModel();
+
+        if ($ipBlocklistModel->isBlocked($ip)) {
+            return Result::fail('Trop de tentatives. Réessayez dans quelques minutes.', 429);
+        }
+
         $maxAttempts = (int) (getenv('LOGIN_MAX_ATTEMPTS') ?: 5);
         $lockMinutes = (int) (getenv('LOGIN_LOCK_MINUTES') ?: 15);
 
         $userRecord = $model->getUserForLogin($email);
 
         if (!$userRecord || !($userRecord['is_active'] ?? false)) {
+            $ipBlocklistModel->incrementFailedAttempts($ip, 10);
             $ban = $userRecord ? (new BanModel())->getActiveBan($userRecord['id']) : null;
             (new UserHistory())->logLoginFailed($request, $email, $userRecord['id'] ?? null, $ban ? 'banned' : 'invalid_credentials');
             if ($ban) {
@@ -137,11 +146,13 @@ class UserService
         }
 
         if (!empty($userRecord['locked_until']) && strtotime($userRecord['locked_until']) > time()) {
+            $ipBlocklistModel->incrementFailedAttempts($ip, 10);
             (new UserHistory())->logLoginFailed($request, $email, $userRecord['id'] ?? null, 'locked');
             return Result::fail(lang('Users.login.locked'), 423);
         }
 
         if (!password_verify($password, $userRecord['password_hash'])) {
+            $ipBlocklistModel->incrementFailedAttempts($ip, 10);
             $failed = ((int) ($userRecord['failed_login_count'] ?? 0)) + 1;
             $lockedUntil = null;
             if ($failed >= $maxAttempts) {
@@ -162,6 +173,7 @@ class UserService
             return Result::fail(lang('Users.login.invalid'), 401);
         }
 
+        $ipBlocklistModel->clearFailedAttempts($ip);
         $model->recordLoginSuccess($userRecord['id']);
         $user = $model->getUserById($userRecord['id']);
 

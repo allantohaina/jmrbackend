@@ -89,6 +89,18 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         });
     });
 
+    $routes->group('admin', ['filter' => 'admin'], function($routes) {
+        $routes->get('bans', 'Bans::index');
+        $routes->get('bans/(:segment)', 'Bans::show/$1');
+        $routes->get('bans/user/(:segment)', 'Bans::userBans/$1');
+        $routes->post('bans', 'Bans::create');
+        $routes->delete('bans/(:segment)', 'Bans::delete/$1');
+
+        $routes->get('blacklist', 'Blacklist::index');
+        $routes->post('blacklist', 'Blacklist::create');
+        $routes->delete('blacklist/(:segment)', 'Blacklist::delete/$1');
+    });
+
     // Site content (public read, admin write)
     $routes->get('content', 'Content::index');
     $routes->put('content/(:any)', 'Content::update/$1', ['filter' => 'auth']);

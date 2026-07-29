@@ -39,6 +39,7 @@ class Filters extends BaseFilters
         'ratelimit'     => \App\Filters\RateLimitFilter::class,
         'firewall'      => \App\Filters\FirewallFilter::class,
         'connectiontrace' => \App\Filters\ConnectionTraceFilter::class,
+        'ipblocklist' => \App\Filters\IpBlocklistFilter::class,
     ];
 
     /**
@@ -116,6 +117,6 @@ class Filters extends BaseFilters
             'before' => ['api/*'],
             'after'  => ['api/*'],
         ],
-        // 'ratelimit' => ['before' => ['api/users/register', 'api/users/login']], // Temporairement désactivé pour le développement
+        'ratelimit' => ['before' => ['api/users/register', 'api/users/login', 'api/users/refresh']],
     ];
 }
