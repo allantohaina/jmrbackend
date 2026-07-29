@@ -167,12 +167,12 @@ class UserModel extends Model
      */
     public function getAllUsers(): array
     {
+        $this->select('id, email, first_name, last_name, phone, role, is_active, country, address, birth_date, last_login_at, created_at, updated_at, deleted_at');
         $users = $this->findAll();
-        foreach ($users as &$user) {
+        return array_map(function ($user) {
             unset($user['password_hash']);
-            unset($user['failed_login_count'], $user['locked_until'], $user['last_failed_login_at'], $user['last_login_at']);
-        }
-        return $users;
+            return $user;
+        }, $users);
     }
 
     /**

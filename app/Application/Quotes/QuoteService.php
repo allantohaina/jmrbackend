@@ -66,9 +66,19 @@ class QuoteService
     public function list(IncomingRequest $request): Result
     {
         $model = new QuoteModel();
-        $quotes = $model->getAllQuotes();
+        $page = max(1, (int) ($request->getGet('page') ?? 1));
+        $perPage = min(100, max(1, (int) ($request->getGet('per_page') ?? 50)));
+        $offset = ($page - 1) * $perPage;
 
-        return Result::ok($quotes);
+        $quotes = $model->getAllQuotes($perPage, $offset);
+        $total = $model->countAll();
+
+        return Result::ok([
+            'data' => $quotes,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+        ]);
     }
 
     public function updateStatus(int|string $id, ?string $status, array $additionalData = []): Result
