@@ -2,44 +2,45 @@
 
 namespace App\Filters;
 
-use App\Application\Security\RateLimitService;
-use App\Application\Shared\Result;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class RateLimitFilter implements FilterInterface
 {
+    private const BUCKETS = [
+        'login'   => ['capacity' => 10, 'seconds' => 60],
+        'auth'    => ['capacity' => 30, 'seconds' => 60],
+        'default' => ['capacity' => 60, 'seconds' => 60],
+    ];
+
     public function before(RequestInterface $request, $arguments = null)
     {
-        $service = new RateLimitService();
-        $result = $service->check($request, $arguments);
+        $bucket = is_array($arguments) && isset($arguments[0]) ? (string) $arguments[0] : 'default';
+        $limits = self::BUCKETS[$bucket] ?? self::BUCKETS['default'];
 
-        $payload = $result->getPayload();
+        $throttler = service('throttler');
+        $ip = $request->getIPAddress();
+        $key = hash('sha256', $bucket . '|' . $ip);
 
-        if ($result->getType() === Result::TYPE_FAIL && $result->getStatus() === 429) {
-            $response = service('response');
-            return $response
+        if ($throttler->check($key, $limits['capacity'], $limits['seconds']) === false) {
+            $tokenTime = $throttler->getTokenTime();
+            return service('response')
                 ->setStatusCode(429)
-                ->setHeader('Retry-After', (string) ($payload['retry_after'] ?? 0))
-                ->setHeader('X-RateLimit-Limit', (string) ($payload['limit'] ?? 0))
+                ->setHeader('Retry-After', (string) ($tokenTime ?: 0))
+                ->setHeader('X-RateLimit-Limit', (string) $limits['capacity'])
                 ->setHeader('X-RateLimit-Remaining', '0')
                 ->setJSON([
-                    'error' => $payload['error'] ?? lang('RateLimit.too_many'),
-                    'retry_after' => $payload['retry_after'] ?? 0,
+                    'error' => 'Trop de requêtes. Réessayez plus tard.',
+                    'retry_after' => $tokenTime ?: 0,
                 ]);
         }
-
-        service('response')
-            ->setHeader('X-RateLimit-Limit', (string) ($payload['limit'] ?? 0))
-            ->setHeader('X-RateLimit-Remaining', (string) ($payload['remaining'] ?? 0));
 
         return null;
     }
 
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
-        return null;
     }
 }
 
