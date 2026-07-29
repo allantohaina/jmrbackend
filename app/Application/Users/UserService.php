@@ -7,6 +7,8 @@ use App\History\AdminHistory;
 use App\History\TokenHistory;
 use App\History\UserHistory;
 use App\Libraries\JWTLibrary;
+use App\Models\BanModel;
+use App\Models\BlacklistModel;
 use App\Models\RefreshTokenModel;
 use App\Models\TokenBlacklistModel;
 use App\Models\UserModel;
@@ -73,7 +75,13 @@ class UserService
             return $emailVerification;
         }
 
-        // Sanitize email to avoid duplicates (remove Gmail plus trick
+        // Check blacklist
+        $ip = $request->getIPAddress();
+        if ((new BlacklistModel())->isBlacklisted($data['email'], $ip)) {
+            return Result::fail('Inscription non autorisée.', 403);
+        }
+
+        // Sanitize email to avoid duplicates (remove Gmail plus trick)
         try {
             $emailValidator = new EmailValidator();
             $emailValidator->validate($email);
@@ -120,7 +128,11 @@ class UserService
         $userRecord = $model->getUserForLogin($email);
 
         if (!$userRecord || !($userRecord['is_active'] ?? false)) {
-            (new UserHistory())->logLoginFailed($request, $email, $userRecord['id'] ?? null, 'invalid_credentials');
+            $ban = $userRecord ? (new BanModel())->getActiveBan($userRecord['id']) : null;
+            (new UserHistory())->logLoginFailed($request, $email, $userRecord['id'] ?? null, $ban ? 'banned' : 'invalid_credentials');
+            if ($ban) {
+                return Result::fail(['error' => 'Votre compte a été suspendu. Motif : ' . $ban['reason']], 403);
+            }
             return Result::fail(lang('Users.login.invalid'), 401);
         }
 
