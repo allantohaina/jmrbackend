@@ -50,5 +50,8 @@ return [
             'required' => 'Le nom est requis',
             'min_length' => 'Le nom doit contenir au moins 2 caractères',
         ],
+        'phone' => [
+            'is_unique' => 'Veuillez choisir un autre numéro de téléphone',
+        ],
     ],
 ];

@@ -113,4 +113,31 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->put('(:segment)', 'Assemblages::update/$1');
         $routes->delete('(:segment)', 'Assemblages::delete/$1');
     });
+
+    // Commandes (Orders)
+    $routes->group('commandes', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'Commandes::index');
+        $routes->get('(:segment)', 'Commandes::show/$1');
+        $routes->post('/', 'Commandes::create');
+        $routes->put('(:segment)', 'Commandes::update/$1');
+        $routes->delete('(:segment)', 'Commandes::delete/$1');
+    });
+
+    // Achats (Purchases)
+    $routes->group('achats', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'Achats::index');
+        $routes->get('(:segment)', 'Achats::show/$1');
+        $routes->post('/', 'Achats::create');
+        $routes->put('(:segment)', 'Achats::update/$1');
+        $routes->delete('(:segment)', 'Achats::delete/$1');
+    });
+
+    // Bons de livraison (Delivery Notes)
+    $routes->group('bon-livraison', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'BonLivraison::index');
+        $routes->get('(:segment)', 'BonLivraison::show/$1');
+        $routes->post('/', 'BonLivraison::create');
+        $routes->put('(:segment)', 'BonLivraison::update/$1');
+        $routes->delete('(:segment)', 'BonLivraison::delete/$1');
+    });
 });

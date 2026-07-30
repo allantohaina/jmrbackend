@@ -25,7 +25,8 @@ class Quotes extends ResourceController
     public function index(): ResponseInterface
     {
         try {
-            $result = $this->quoteService()->list($this->request);
+            $userId = $this->request->user['id'] ?? null;
+            $result = $this->quoteService()->list($this->request, $userId);
             return $this->respond($result->getPayload(), $result->getStatus());
         } catch (Throwable $e) {
             log_message('error', 'Quotes index error: ' . $e->getMessage());
@@ -140,9 +141,20 @@ class Quotes extends ResourceController
 
     private function getInputData(): array
     {
-        $json = $this->request->getJSON(true);
-        if (is_array($json)) {
-            return $json;
+        // If multipart/form-data, read from getPost() directly
+        $contentType = $this->request->getHeaderLine('Content-Type');
+        if (str_contains($contentType, 'multipart/form-data')) {
+            $post = $this->request->getPost();
+            return is_array($post) ? $post : [];
+        }
+
+        try {
+            $json = $this->request->getJSON(true);
+            if (is_array($json)) {
+                return $json;
+            }
+        } catch (Throwable) {
+            // Not JSON, fall through
         }
 
         $raw = $this->request->getRawInput();

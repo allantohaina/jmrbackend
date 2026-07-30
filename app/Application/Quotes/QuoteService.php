@@ -63,9 +63,19 @@ class QuoteService
         return Result::created($quote);
     }
 
-    public function list(IncomingRequest $request): Result
+    public function list(IncomingRequest $request, ?string $userId = null): Result
     {
         $model = new QuoteModel();
+
+        if ($userId) {
+            $quotes = $model->where('email', $request->user['email'] ?? '')->orderBy('created_at', 'DESC')->findAll();
+            $total = count($quotes);
+            return Result::ok([
+                'data' => $quotes,
+                'total' => $total,
+            ]);
+        }
+
         $page = max(1, (int) ($request->getGet('page') ?? 1));
         $perPage = min(100, max(1, (int) ($request->getGet('per_page') ?? 50)));
         $offset = ($page - 1) * $perPage;

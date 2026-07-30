@@ -47,7 +47,6 @@ class CreateIpBlocklistTable extends Migration
             ]);
             $this->forge->addKey('id', true);
             $this->forge->addUniqueKey('ip_address');
-            $this->forge->addKey('ip_address');
             $this->forge->createTable('ip_blocklist');
         }
     }

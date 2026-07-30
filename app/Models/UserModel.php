@@ -42,7 +42,7 @@ class UserModel extends Model
         'password' => 'required|min_length[8]',
         'first_name' => 'required|min_length[2]|max_length[100]',
         'last_name' => 'required|min_length[2]|max_length[100]',
-        'phone' => 'permit_empty|max_length[20]',
+        'phone' => 'permit_empty|max_length[20]|is_unique[users.phone,id,{id}]',
         'birth_date' => 'permit_empty|valid_date',
         'country' => 'permit_empty|max_length[2]',
         'address' => 'permit_empty|max_length[255]',
@@ -66,6 +66,9 @@ class UserModel extends Model
         'last_name' => [
             'required' => 'Users.validation.last_name.required',
             'min_length' => 'Users.validation.last_name.min_length'
+        ],
+        'phone' => [
+            'is_unique' => 'Users.validation.phone.is_unique'
         ]
     ];
 
@@ -197,7 +200,7 @@ class UserModel extends Model
             'password' => 'permit_empty|min_length[8]',
             'first_name' => 'required|min_length[2]|max_length[100]',
             'last_name' => 'required|min_length[2]|max_length[100]',
-            'phone' => 'permit_empty|max_length[20]',
+            'phone' => 'permit_empty|max_length[20]|is_unique[users.phone,id,{id}]',
             'role' => 'permit_empty|in_list[admin,user,worker]',
             'is_active' => 'permit_empty|in_list[0,1,true,false]',
         ];
