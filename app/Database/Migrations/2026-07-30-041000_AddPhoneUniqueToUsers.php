@@ -8,11 +8,11 @@ class AddPhoneUniqueToUsers extends Migration
 {
     public function up()
     {
-        $this->db->simpleQuery('CREATE UNIQUE INDEX IF NOT EXISTS users_phone_uq ON users (phone) WHERE phone IS NOT NULL');
+        $this->db->simpleQuery('CREATE UNIQUE INDEX users_phone_uq ON users (phone)');
     }
 
     public function down()
     {
-        $this->db->simpleQuery('DROP INDEX IF EXISTS users_phone_uq');
+        $this->db->simpleQuery('DROP INDEX users_phone_uq');
     }
 }
