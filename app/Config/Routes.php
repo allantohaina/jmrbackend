@@ -5,7 +5,10 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', 'Home::index');
+// Root route - disabled, returns 403
+$routes->get('/', static function () {
+    return service('response')->setStatusCode(403)->setBody('Forbidden');
+});
 
 // Public routes (no authentication required)
 $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {

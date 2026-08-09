@@ -1,25 +1,50 @@
 <!doctype html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="robots" content="noindex">
-
-    <title><?= lang('Errors.whoops') ?></title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erreur</title>
     <style>
-        <?= preg_replace('#[\r\n\t ]+#', ' ', file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'debug.css')) ?>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .error-container {
+            text-align: center;
+            padding: 3rem 2rem;
+            max-width: 500px;
+        }
+        .error-code {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #dc3545;
+            margin-bottom: 0.5rem;
+        }
+        .error-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+        .error-message {
+            font-size: 1rem;
+            color: #6c757d;
+            line-height: 1.6;
+        }
     </style>
 </head>
 <body>
-
-    <div class="container text-center">
-
-        <h1 class="headline"><?= lang('Errors.whoops') ?></h1>
-
-        <p class="lead"><?= lang('Errors.weHitASnag') ?></p>
-
+    <div class="error-container">
+        <div class="error-code">Erreur</div>
+        <div class="error-title">Une erreur est survenue</div>
+        <div class="error-message">Veuillez réessayer plus tard.</div>
     </div>
-
 </body>
-
 </html>

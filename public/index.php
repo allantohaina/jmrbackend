@@ -39,6 +39,17 @@ if (getcwd() . DIRECTORY_SEPARATOR !== FCPATH) {
 
 /*
  *---------------------------------------------------------------
+ * FORCE PRODUCTION MODE
+ *---------------------------------------------------------------
+ * Always run in production to suppress debug output, error details,
+ * and version information on error pages.
+ */
+if (! defined('ENVIRONMENT')) {
+    define('ENVIRONMENT', 'production');
+}
+
+/*
+ *---------------------------------------------------------------
  * BOOTSTRAP THE APPLICATION
  *---------------------------------------------------------------
  * This process sets up the path constants, loads and registers
