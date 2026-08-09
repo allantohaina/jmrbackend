@@ -86,6 +86,7 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->group('', ['filter' => 'auth'], function($routes) {
             $routes->get('notifications', 'Quotes::notifications');
             $routes->put('notifications/(:segment)/read', 'Quotes::markNotificationRead/$1');
+            $routes->post('(:segment)/confirm', 'Quotes::confirm/$1');
             $routes->get('/', 'Quotes::index');
             $routes->get('(:segment)', 'Quotes::show/$1');
             $routes->put('(:segment)/status', 'Quotes::updateStatus/$1');

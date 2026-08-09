@@ -96,7 +96,11 @@ class Quotes extends ResourceController
             $status = $input['status'] ?? null;
             $additionalData = array_filter($input, fn($key) => !in_array($key, ['status']), ARRAY_FILTER_USE_KEY);
 
-            $result = $this->quoteService()->updateStatus($id, $status, $additionalData);
+            $actor = $this->request->user ?? [];
+            if (($actor['role'] ?? null) !== 'admin') {
+                return $this->failForbidden('Seul un administrateur peut modifier un devis.');
+            }
+            $result = $this->quoteService()->updateStatus($id, $status, $additionalData, $actor);
 
             if ($result->isSuccess()) {
                 return $this->respond($result->getPayload());
@@ -105,6 +109,19 @@ class Quotes extends ResourceController
             return $this->fail($result->getPayload(), $result->getStatus());
         } catch (Throwable $e) {
             log_message('error', 'Quotes updateStatus error: ' . $e->getMessage());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
+    public function confirm($id = null): ResponseInterface
+    {
+        try {
+            $actor = $this->request->user ?? [];
+            $result = $this->quoteService()->confirmByClient($id, $actor);
+            if (!$result->isSuccess()) return $this->fail($result->getPayload(), $result->getStatus());
+            return $this->respond($result->getPayload());
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes confirm error: ' . $e->getMessage());
             return $this->failServerError('Erreur interne du serveur');
         }
     }

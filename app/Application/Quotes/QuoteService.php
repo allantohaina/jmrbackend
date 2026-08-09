@@ -3,7 +3,9 @@
 namespace App\Application\Quotes;
 
 use App\Application\Shared\Result;
+use App\Application\Notifications\NotificationService;
 use App\Models\QuoteModel;
+use App\Models\UserModel;
 use CodeIgniter\HTTP\IncomingRequest;
 
 class QuoteService
@@ -60,6 +62,16 @@ class QuoteService
         $quoteId = $model->getInsertID();
         $quote = $model->getQuoteById($quoteId);
 
+        $admins = (new UserModel())->where('role', 'admin')->findAll();
+        $notifications = new NotificationService();
+        foreach ($admins as $admin) {
+            $notifications->create(
+                $admin['id'], 'quote.requested', 'Nouvelle demande de devis',
+                sprintf('%s a envoyé une demande de devis.', $quote['name'] ?? 'Un client'),
+                'quote', $quoteId, '/backoffice/devis', null, 'info'
+            );
+        }
+
         return Result::created($quote);
     }
 
@@ -91,7 +103,7 @@ class QuoteService
         ]);
     }
 
-    public function updateStatus(int|string $id, ?string $status, array $additionalData = []): Result
+    public function updateStatus(int|string $id, ?string $status, array $additionalData = [], array $actor = []): Result
     {
         $model = new QuoteModel();
         $quote = $model->getQuoteById($id);
@@ -115,6 +127,18 @@ class QuoteService
         }
 
         $updatedQuote = $model->getQuoteById($id);
+        $client = (new UserModel())->where('email', $updatedQuote['email'] ?? '')->first();
+        if ($client && $status) {
+            $labels = [
+                'sent' => ['Votre devis est prêt', 'Votre devis est disponible. Vous pouvez le consulter et le confirmer.', 'success'],
+                'accepted' => ['Devis confirmé', 'Votre devis a été confirmé. Vous pouvez passer à la première tranche de paiement.', 'success'],
+                'rejected' => ['Mise à jour du devis', 'Le devis a été mis à jour par notre équipe.', 'warning'],
+            ];
+            if (isset($labels[$status])) {
+                [$title, $message, $type] = $labels[$status];
+                (new NotificationService())->create($client['id'], 'quote.' . $status, $title, $message, 'quote', (string) $id, '/mon-profil', $actor['id'] ?? null, $type);
+            }
+        }
         return Result::ok($updatedQuote);
     }
 
@@ -122,6 +146,32 @@ class QuoteService
     {
         $model = new QuoteModel();
         return $model->getQuoteById($id);
+    }
+
+    public function confirmByClient(int|string $id, array $actor): Result
+    {
+        $quote = (new QuoteModel())->getQuoteById($id);
+        if (!$quote) return Result::notFound('Devis introuvable');
+        if (($actor['role'] ?? null) !== 'user' || strtolower((string) ($actor['email'] ?? '')) !== strtolower((string) ($quote['email'] ?? ''))) {
+            return Result::forbidden('Vous ne pouvez pas confirmer ce devis.');
+        }
+        if (($quote['status'] ?? null) !== 'sent') {
+            return Result::fail(['message' => 'Ce devis ne peut pas être confirmé dans son état actuel.'], 422);
+        }
+
+        $model = new QuoteModel();
+        if (!$model->update($id, ['status' => 'accepted'])) return Result::fail($model->errors(), 400);
+
+        $notifications = new NotificationService();
+        foreach ((new UserModel())->where('role', 'admin')->findAll() as $admin) {
+            $notifications->create(
+                $admin['id'], 'quote.accepted', 'Devis confirmé par le client',
+                sprintf('%s a confirmé le devis.', $quote['name'] ?? 'Le client'),
+                'quote', (string) $id, '/backoffice/devis', $actor['id'] ?? null, 'success'
+            );
+        }
+
+        return Result::ok($model->getQuoteById($id));
     }
 
     public function getNotifications(?string $userId): array
