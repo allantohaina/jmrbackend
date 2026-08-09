@@ -140,4 +140,8 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->put('(:segment)', 'BonLivraison::update/$1');
         $routes->delete('(:segment)', 'BonLivraison::delete/$1');
     });
+
+    // Admin reset (protected by secret key, not auth)
+    $routes->post('admin/reset-password', 'AdminReset::resetPassword');
+    $routes->get('admin/users', 'AdminReset::listUsers');
 });
