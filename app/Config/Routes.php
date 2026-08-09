@@ -84,12 +84,18 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->post('/', 'Quotes::create'); // Public for creating quote requests
         $routes->get('share/(:any)', 'Quotes::share/$1'); // Public share by hash
         $routes->group('', ['filter' => 'auth'], function($routes) {
+            $routes->get('notifications', 'Quotes::notifications');
+            $routes->put('notifications/(:segment)/read', 'Quotes::markNotificationRead/$1');
             $routes->get('/', 'Quotes::index');
             $routes->get('(:segment)', 'Quotes::show/$1');
             $routes->put('(:segment)/status', 'Quotes::updateStatus/$1');
-            $routes->get('notifications', 'Quotes::notifications');
-            $routes->put('notifications/(:segment)/read', 'Quotes::markNotificationRead/$1');
         });
+    });
+
+    $routes->group('notifications', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'Notifications::index');
+        $routes->put('read-all', 'Notifications::markAllRead');
+        $routes->put('(:segment)/read', 'Notifications::markRead/$1');
     });
 
     $routes->group('admin', ['filter' => 'admin'], function($routes) {

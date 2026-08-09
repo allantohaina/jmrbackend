@@ -8,23 +8,21 @@ class NotificationModel extends Model
 {
     protected $table = 'notifications';
     protected $primaryKey = 'id';
-    protected $useAutoIncrement = true;
+    protected $useAutoIncrement = false;
     protected $returnType = 'array';
-    protected $useSoftDeletes = false;
     protected $protectFields = true;
     protected $allowedFields = [
-        'title',
-        'message',
-        'type',
-        'read',
-        'user_id',
-        'quote_id',
+        'recipient_user_id', 'actor_user_id', 'entity_type', 'entity_id', 'event',
+        'type', 'title', 'message', 'action_url', 'read_at',
     ];
-
-    // Dates
     protected $useTimestamps = true;
-    protected $dateFormat = 'datetime';
     protected $createdField = 'created_at';
     protected $updatedField = '';
-    protected $deletedField = '';
+    protected $beforeInsert = ['generateUUID'];
+
+    protected function generateUUID(array $data): array
+    {
+        if (empty($data['data']['id'])) $data['data']['id'] = \App\Traits\UuidTrait::uuidV4();
+        return $data;
+    }
 }
