@@ -46,7 +46,7 @@ trait FieldHelpers
     protected function jsonbField(bool $nullable = true): array
     {
         return [
-            'type' => 'JSONB',
+            'type' => 'JSON',
             'null' => $nullable,
         ];
     }
