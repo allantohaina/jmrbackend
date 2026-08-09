@@ -17,22 +17,21 @@ class QuoteService
         // Handle file uploads
         $files = $request->getFiles();
         $uploadedFiles = [];
-        if (!empty($files)) {
-            foreach ($files as $fileKey => $file) {
-                if (is_array($file)) {
-                    foreach ($file as $f) {
-                        if ($f->isValid() && !$f->hasMoved()) {
-                            $newName = $f->getRandomName();
-                            $f->move(WRITEPATH . 'uploads', $newName);
-                            $uploadedFiles[] = [
-                                'name' => $f->getName(),
-                                'url' => base_url('uploads/' . $newName),
-                                'type' => $f->getMimeType(),
-                            ];
-                        }
-                    }
-                }
+        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'text/csv', 'application/csv'];
+        $attachments = $files['technical_files'] ?? $files['technical_files[]'] ?? [];
+        $attachments = is_array($attachments) ? $attachments : [$attachments];
+        foreach ($attachments as $file) {
+            if (!$file || !$file->isValid() || $file->hasMoved()) continue;
+            if ($file->getSize() > 10 * 1024 * 1024 || !in_array($file->getMimeType(), $allowedMimeTypes, true)) {
+                return Result::fail(['message' => 'Format de fichier non autorisé ou fichier trop volumineux.'], 422);
             }
+            $newName = $file->getRandomName();
+            $file->move(WRITEPATH . 'uploads', $newName);
+            $uploadedFiles[] = [
+                'name' => $file->getName(),
+                'url' => base_url('uploads/' . $newName),
+                'type' => $file->getMimeType(),
+            ];
         }
 
         $quoteData = [
