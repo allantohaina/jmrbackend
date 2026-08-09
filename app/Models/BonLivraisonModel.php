@@ -15,6 +15,7 @@ class BonLivraisonModel extends Model
     protected $allowedFields = [
         'id', 'commande_id', 'numero', 'date_livraison',
         'destinataire', 'articles', 'statut', 'notes',
+        'admin_signature_name', 'admin_signature_at',
     ];
 
     protected $useTimestamps = true;

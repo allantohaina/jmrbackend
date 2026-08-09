@@ -37,6 +37,8 @@ class QuoteModel extends Model
         'balance_paid',
         'files',
         'notifications',
+        'admin_signature_name',
+        'admin_signature_at',
     ];
 
     // Dates

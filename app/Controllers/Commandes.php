@@ -63,4 +63,46 @@ class Commandes extends ResourceController
         }
         return $this->respondDeleted($result->getPayload());
     }
+
+    public function sign($id = null)
+    {
+        try {
+            $actor = $this->request->user ?? [];
+            if (($actor['role'] ?? null) !== 'admin') {
+                return $this->failForbidden('Seul un administrateur peut signer un document.');
+            }
+
+            $input = $this->request->getJSON(true) ?? $this->request->getRawInput() ?? [];
+            if (!is_array($input)) {
+                $input = [];
+            }
+            $signatureName = trim((string)($input['admin_signature_name'] ?? ''));
+            $signatureAt = $input['admin_signature_at'] ?? date('Y-m-d H:i:s');
+
+            if ($signatureName === '') {
+                return $this->failValidationErrors(['admin_signature_name' => 'Le nom du signataire est requis.']);
+            }
+
+            $model = new \App\Models\CommandeModel();
+            $record = $model->find($id);
+            if (!$record) {
+                return $this->failNotFound('Commande introuvable.');
+            }
+
+            $updated = $model->update($id, [
+                'admin_signature_name' => $signatureName,
+                'admin_signature_at'   => is_string($signatureAt) ? $signatureAt : date('Y-m-d H:i:s'),
+            ]);
+
+            if (!$updated) {
+                return $this->failServerError('Impossible d\'enregistrer la signature.');
+            }
+
+            $fresh = $model->getCommandeWithClient($id);
+            return $this->respond($fresh ?? $model->find($id));
+        } catch (\Throwable $e) {
+            log_message('error', 'Commandes sign error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
 }

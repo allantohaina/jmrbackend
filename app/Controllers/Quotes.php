@@ -156,6 +156,45 @@ class Quotes extends ResourceController
         }
     }
 
+    public function sign($id = null): ResponseInterface
+    {
+        try {
+            $actor = $this->request->user ?? [];
+            if (($actor['role'] ?? null) !== 'admin') {
+                return $this->failForbidden('Seul un administrateur peut signer un document.');
+            }
+
+            $input = $this->getInputData();
+            $signatureName = trim((string)($input['admin_signature_name'] ?? ''));
+            $signatureAt = $input['admin_signature_at'] ?? date('Y-m-d H:i:s');
+
+            if ($signatureName === '') {
+                return $this->failValidationErrors(['admin_signature_name' => 'Le nom du signataire est requis.']);
+            }
+
+            $quoteModel = new \App\Models\QuoteModel();
+            $quote = $quoteModel->find($id);
+            if (!$quote) {
+                return $this->failNotFound('Devis introuvable.');
+            }
+
+            $updated = $quoteModel->update($id, [
+                'admin_signature_name' => $signatureName,
+                'admin_signature_at'   => is_string($signatureAt) ? $signatureAt : date('Y-m-d H:i:s'),
+            ]);
+
+            if (!$updated) {
+                return $this->failServerError('Impossible d\'enregistrer la signature.');
+            }
+
+            $fresh = $quoteModel->find($id);
+            return $this->respond($fresh);
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes sign error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
     private function getInputData(): array
     {
         // If multipart/form-data, read from getPost() directly

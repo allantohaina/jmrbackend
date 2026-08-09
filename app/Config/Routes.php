@@ -90,6 +90,7 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
             $routes->get('/', 'Quotes::index');
             $routes->get('(:segment)', 'Quotes::show/$1');
             $routes->put('(:segment)/status', 'Quotes::updateStatus/$1');
+            $routes->put('(:segment)/sign', 'Quotes::sign/$1');
         });
     });
 
@@ -131,6 +132,7 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->post('/', 'Commandes::create');
         $routes->put('(:segment)', 'Commandes::update/$1');
         $routes->delete('(:segment)', 'Commandes::delete/$1');
+        $routes->put('(:segment)/sign', 'Commandes::sign/$1');
     });
 
     // Achats (Purchases)
@@ -149,6 +151,7 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->post('/', 'BonLivraison::create');
         $routes->put('(:segment)', 'BonLivraison::update/$1');
         $routes->delete('(:segment)', 'BonLivraison::delete/$1');
+        $routes->put('(:segment)/sign', 'BonLivraison::sign/$1');
     });
 
     // Admin reset (protected by secret key, not auth)
