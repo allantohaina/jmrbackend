@@ -4,17 +4,83 @@ namespace App\Application\Quotes;
 
 use App\Application\Shared\Result;
 use App\Application\Notifications\NotificationService;
+use App\Application\DemandesClient\DemandeClientService;
+use App\Application\Commandes\CommandeService;
 use App\Models\QuoteModel;
 use App\Models\UserModel;
+use App\Models\ProduitModel;
 use CodeIgniter\HTTP\IncomingRequest;
 
 class QuoteService
 {
+    public function recalculateCotation(array $data): array
+    {
+        $matiereFourniePar = $data['matiere_fournie_par'] ?? 'atelier';
+        $consoTissu = (float)($data['conso_tissu_unitaire'] ?? 0);
+        $tauxChute = (float)($data['taux_chute_pct'] ?? 10);
+        $niveauDiff = (float)($data['niveau_difficulte'] ?? 1);
+        $prixMatiereParMetre = (float)($data['prix_matiere_par_metre'] ?? 0);
+        $coutMOPiece = (float)($data['cout_mo_par_piece'] ?? 0);
+        $fraisGpct = (float)($data['frais_generaux_pct'] ?? 20);
+        $quantite = (int)($data['quantite_commandee'] ?? 0);
+
+        $tissuParPieceAvecChute = $consoTissu * (1 + ($tauxChute / 100));
+
+        if (strtolower((string)$matiereFourniePar) === 'client' || strtolower((string)$matiereFourniePar) === 'cmt') {
+            $coutMatiere = 0;
+        } else {
+            $coutMatiere = $tissuParPieceAvecChute * $prixMatiereParMetre;
+        }
+
+        $coutMO = $coutMOPiece * max(1.0, $niveauDiff);
+        $coutDirect = $coutMatiere + $coutMO;
+        $coutFG = $coutDirect * ($fraisGpct / 100);
+        $coutRevientTotal = $coutDirect + $coutFG;
+
+        $marge = 0.25;
+        $prixUnitaire = $coutRevientTotal * (1 + $marge);
+        $prixTotal = $prixUnitaire * $quantite;
+
+        return [
+            'tissu_avec_chute_par_piece' => round($tissuParPieceAvecChute, 4),
+            'cout_matiere' => round($coutMatiere, 2),
+            'cout_main_oeuvre' => round($coutMO, 2),
+            'cout_frais_generaux' => round($coutFG, 2),
+            'cout_de_revient' => round($coutRevientTotal, 2),
+            'prix_unitaire_calcule' => round($prixUnitaire, 2),
+            'prix_total_calcule' => round($prixTotal, 2),
+        ];
+    }
+
+    private function hydrateWithProduitDefaults(array $data): array
+    {
+        if (empty($data['produit_id'])) return $data;
+        $produit = (new ProduitModel())->findWithDecoded($data['produit_id']);
+        if (!$produit) return $data;
+        $fields = [
+            'conso_tissu_unitaire' => $produit['conso_tissu_unitaire'] ?? null,
+            'niveau_difficulte' => $produit['niveau_difficulte_defaut'] ?? null,
+            'prix_matiere_par_metre' => $produit['cout_matiere_defaut'] ?? null,
+            'cout_mo_par_piece' => $produit['cout_mo_par_piece'] ?? null,
+            'frais_generaux_pct' => $produit['frais_generaux_pct'] ?? null,
+        ];
+        foreach ($fields as $key => $val) {
+            if ($val !== null && trim((string)($data[$key] ?? '')) === '') {
+                $data[$key] = $val;
+            }
+        }
+        if (empty($data['taux_chute_pct'])) {
+            $data['taux_chute_pct'] = 10;
+        }
+        if (empty($data['matiere_fournie_par'])) {
+            $data['matiere_fournie_par'] = 'atelier';
+        }
+        return $data;
+    }
+
     public function create(array $data, IncomingRequest $request): Result
     {
         $model = new QuoteModel();
-
-        // Handle file uploads
         $files = $request->getFiles();
         $uploadedFiles = [];
         $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'text/csv', 'application/csv'];
@@ -34,6 +100,9 @@ class QuoteService
             ];
         }
 
+        $data = $this->hydrateWithProduitDefaults($data);
+        $calc = $this->recalculateCotation($data);
+
         $quoteData = [
             'name' => $data['name'] ?? null,
             'email' => $data['email'] ?? null,
@@ -51,7 +120,28 @@ class QuoteService
             'delai_souhaite' => $data['delai_souhaite'] ?? null,
             'request_type' => $data['request_type'] ?? 'new',
             'modify_code' => $data['modify_code'] ?? null,
-            'files' => !empty($uploadedFiles) ? json_encode($uploadedFiles) : null,
+            'status' => $data['status'] ?? 'draft',
+            'client_id' => $data['client_id'] ?? null,
+            'produit_id' => $data['produit_id'] ?? null,
+            'matiere_fournie_par' => $data['matiere_fournie_par'] ?? 'atelier',
+            'conso_tissu_unitaire' => $data['conso_tissu_unitaire'] ?? null,
+            'taux_chute_pct' => $data['taux_chute_pct'] ?? null,
+            'niveau_difficulte' => $data['niveau_difficulte'] ?? null,
+            'prix_matiere_par_metre' => $data['prix_matiere_par_metre'] ?? null,
+            'cout_mo_par_piece' => $data['cout_mo_par_piece'] ?? null,
+            'frais_generaux_pct' => $data['frais_generaux_pct'] ?? null,
+            'cout_matiere' => $calc['cout_matiere'],
+            'cout_main_oeuvre' => $calc['cout_main_oeuvre'],
+            'cout_frais_generaux' => $calc['cout_frais_generaux'],
+            'prix_unitaire_calcule' => $calc['prix_unitaire_calcule'],
+            'quantite_commandee' => $data['quantite_commandee'] ?? 0,
+            'prix_total_calcule' => $calc['prix_total_calcule'],
+            'amount' => $data['amount'] ?? $calc['prix_total_calcule'],
+            'deposit_amount' => $data['deposit_amount'] ?? null,
+            'balance_amount' => $data['balance_amount'] ?? null,
+            'deposit_paid' => $data['deposit_paid'] ?? false,
+            'balance_paid' => $data['balance_paid'] ?? false,
+            'files' => !empty($uploadedFiles) ? json_encode($uploadedFiles) : ($data['files'] ?? null),
         ];
 
         if (!$model->save($quoteData)) {
@@ -59,8 +149,14 @@ class QuoteService
         }
 
         $quoteId = $model->getInsertID();
-        $quote = $model->getQuoteById($quoteId);
 
+        if (!empty($data['demande_id'])) {
+            try {
+                (new DemandeClientService())->linkToCotation($data['demande_id'], (string)$quoteId);
+            } catch (\Throwable) {}
+        }
+
+        $quote = $model->getQuoteById($quoteId);
         $admins = (new UserModel())->where('role', 'admin')->findAll();
         $notifications = new NotificationService();
         foreach ($admins as $admin) {
@@ -70,35 +166,104 @@ class QuoteService
                 'quote', $quoteId, '/backoffice/devis', null, 'info'
             );
         }
-
         return Result::created($quote);
+    }
+
+    public function recalculate(string $id, array $data): Result
+    {
+        $model = new QuoteModel();
+        $quote = $model->getQuoteById($id);
+        if (!$quote) return Result::notFound('Devis introuvable');
+        $merged = array_merge($quote, $data);
+        $merged = $this->hydrateWithProduitDefaults($merged);
+        $calc = $this->recalculateCotation($merged);
+        $update = [
+            'matiere_fournie_par' => $merged['matiere_fournie_par'] ?? $quote['matiere_fournie_par'] ?? null,
+            'produit_id' => $merged['produit_id'] ?? $quote['produit_id'] ?? null,
+            'conso_tissu_unitaire' => $merged['conso_tissu_unitaire'] ?? $quote['conso_tissu_unitaire'] ?? null,
+            'taux_chute_pct' => $merged['taux_chute_pct'] ?? $quote['taux_chute_pct'] ?? null,
+            'niveau_difficulte' => $merged['niveau_difficulte'] ?? $quote['niveau_difficulte'] ?? null,
+            'prix_matiere_par_metre' => $merged['prix_matiere_par_metre'] ?? $quote['prix_matiere_par_metre'] ?? null,
+            'cout_mo_par_piece' => $merged['cout_mo_par_piece'] ?? $quote['cout_mo_par_piece'] ?? null,
+            'frais_generaux_pct' => $merged['frais_generaux_pct'] ?? $quote['frais_generaux_pct'] ?? null,
+            'quantite_commandee' => $merged['quantite_commandee'] ?? $quote['quantite_commandee'] ?? 0,
+            'cout_matiere' => $calc['cout_matiere'],
+            'cout_main_oeuvre' => $calc['cout_main_oeuvre'],
+            'cout_frais_generaux' => $calc['cout_frais_generaux'],
+            'prix_unitaire_calcule' => $calc['prix_unitaire_calcule'],
+            'prix_total_calcule' => $calc['prix_total_calcule'],
+        ];
+        $update['amount'] = $calc['prix_total_calcule'];
+        if (!$model->update($id, $update)) {
+            return Result::fail($model->errors(), 400);
+        }
+        return Result::ok(['data' => $model->getQuoteById($id), 'calcul' => $calc]);
+    }
+
+    public function convertToCommande(string $quoteId, array $extra = []): Result
+    {
+        $model = new QuoteModel();
+        $quote = $model->getQuoteById($quoteId);
+        if (!$quote) return Result::notFound('Devis introuvable');
+        if (($quote['status'] ?? '') !== 'accepted') {
+            return Result::fail(['error' => 'La cotation doit être acceptée avant de créer une commande.'], 422);
+        }
+        $userModel = new UserModel();
+        $client = !empty($quote['client_id'])
+            ? $userModel->find($quote['client_id'])
+            : $userModel->where('email', $quote['email'] ?? '')->first();
+        $clientId = $client['id'] ?? $extra['client_id'] ?? null;
+        if (!$clientId) {
+            return Result::fail(['error' => 'Client introuvable pour créer la commande.'], 422);
+        }
+        $numero = $extra['numero'] ?? ('CMD-' . strtoupper(substr(md5($quoteId . time()), 0, 8)));
+        $quantite = (int)($extra['quantite'] ?? $quote['quantite_commandee'] ?? $quote['quantite'] ?? 1);
+        $prixUnitaire = (float)($extra['prix_unitaire'] ?? $quote['prix_unitaire_calcule'] ?? $quote['amount'] ?? 0);
+        if ($quantite > 0 && $prixUnitaire == 0 && ($quote['amount'] ?? 0) > 0) {
+            $prixUnitaire = (float)$quote['amount'] / $quantite;
+        }
+        $commandeData = [
+            'cotation_id' => $quoteId,
+            'client_id' => $clientId,
+            'numero' => $numero,
+            'designation' => $extra['designation'] ?? $quote['category'] ?? 'Confection textile',
+            'quantite' => $quantite,
+            'prix_unitaire' => $prixUnitaire,
+            'statut_production' => $extra['statut_production'] ?? 'En attente matière',
+            'pieces_produites' => 0,
+            'date_commande' => $extra['date_commande'] ?? date('Y-m-d'),
+            'date_livraison_prevue' => $extra['date_livraison_prevue'] ?? null,
+            'notes' => $extra['notes'] ?? null,
+        ];
+        $service = new CommandeService();
+        return $service->create($commandeData);
     }
 
     public function list(IncomingRequest $request, ?string $userId = null): Result
     {
         $model = new QuoteModel();
-
         if ($userId) {
             $quotes = $model->where('email', $request->user['email'] ?? '')->orderBy('created_at', 'DESC')->findAll();
             $total = count($quotes);
-            return Result::ok([
-                'data' => $quotes,
-                'total' => $total,
-            ]);
+            return Result::ok(['data' => $quotes, 'total' => $total]);
         }
-
         $page = max(1, (int) ($request->getGet('page') ?? 1));
         $perPage = min(100, max(1, (int) ($request->getGet('per_page') ?? 50)));
         $offset = ($page - 1) * $perPage;
-
         $quotes = $model->getAllQuotes($perPage, $offset);
         $total = $model->countAll();
-
+        $counts = [
+            'draft' => 0, 'sent' => 0, 'accepted' => 0, 'rejected' => 0, 'expired' => 0, 'pending' => 0,
+        ];
+        $all = $model->select('status')->findAll();
+        foreach ($all as $q) {
+            $s = (string)($q['status'] ?? 'pending');
+            if (!isset($counts[$s])) $counts[$s] = 0;
+            $counts[$s]++;
+        }
+        $counts['awaiting_client'] = (int)($counts['sent'] ?? 0);
         return Result::ok([
-            'data' => $quotes,
-            'total' => $total,
-            'page' => $page,
-            'per_page' => $perPage,
+            'data' => $quotes, 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'counts' => $counts,
         ]);
     }
 
@@ -106,25 +271,19 @@ class QuoteService
     {
         $model = new QuoteModel();
         $quote = $model->getQuoteById($id);
-
-        if (!$quote) {
-            return Result::notFound('Quote not found');
-        }
-
+        if (!$quote) return Result::notFound('Quote not found');
         $updateData = [];
-        if ($status) {
-            $updateData['status'] = $status;
-        }
+        if ($status) $updateData['status'] = $status;
         foreach ($additionalData as $key => $value) {
-            if (in_array($key, ['amount', 'deposit_amount', 'balance_amount', 'deposit_paid', 'balance_paid'])) {
+            $forbidden = ['prix_unitaire_calcule', 'prix_total_calcule', 'cout_matiere', 'cout_main_oeuvre', 'cout_frais_generaux'];
+            if (in_array($key, $forbidden, true)) continue;
+            if (in_array($key, ['amount', 'deposit_amount', 'balance_amount', 'deposit_paid', 'balance_paid', 'client_id', 'produit_id'])) {
                 $updateData[$key] = $value;
             }
         }
-
         if (!$model->update($id, $updateData)) {
             return Result::fail($model->errors(), 400);
         }
-
         $updatedQuote = $model->getQuoteById($id);
         $client = (new UserModel())->where('email', $updatedQuote['email'] ?? '')->first();
         if ($client && $status) {
@@ -157,10 +316,8 @@ class QuoteService
         if (($quote['status'] ?? null) !== 'sent') {
             return Result::fail(['message' => 'Ce devis ne peut pas être confirmé dans son état actuel.'], 422);
         }
-
         $model = new QuoteModel();
         if (!$model->update($id, ['status' => 'accepted'])) return Result::fail($model->errors(), 400);
-
         $notifications = new NotificationService();
         foreach ((new UserModel())->where('role', 'admin')->findAll() as $admin) {
             $notifications->create(
@@ -169,19 +326,16 @@ class QuoteService
                 'quote', (string) $id, '/backoffice/devis', $actor['id'] ?? null, 'success'
             );
         }
-
         return Result::ok($model->getQuoteById($id));
     }
 
     public function getNotifications(?string $userId): array
     {
-        // For now, return empty array, can be expanded later
         return [];
     }
 
     public function markAsRead(int|string $id): Result
     {
-        // For now, return success, can be expanded later
-        return Result::ok(['message' => 'Notification marked as read']);
+        return Result::ok(['message' => 'Notification marked read']);
     }
 }

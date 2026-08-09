@@ -17,6 +17,7 @@ class CommandeModel extends Model
         'quantite', 'prix_unitaire', 'total', 'statut_production',
         'pieces_produites', 'date_commande', 'date_livraison_prevue',
         'date_livraison_reelle', 'notes',
+        'quantite_tissu_necessaire', 'conso_tissu_unitaire', 'taux_chute_pct',
         'admin_signature_name', 'admin_signature_at',
     ];
 

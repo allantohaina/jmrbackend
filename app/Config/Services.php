@@ -4,8 +4,11 @@ namespace Config;
 
 use App\Application\History\TokenHistory\LogTokenHistoryUseCase;
 use App\Application\Achats\AchatService;
+use App\Application\Attachments\AttachmentService;
 use App\Application\BonLivraison\BonLivraisonService;
 use App\Application\Commandes\CommandeService;
+use App\Application\DemandesClient\DemandeClientService;
+use App\Application\Produits\ProduitService;
 use App\Application\Production\Assemblage\AssemblageService;
 use App\Application\Production\Checklist\ChecklistService;
 use App\Application\Production\Workflow\ProductionWorkflowService;
@@ -79,6 +82,30 @@ class Services extends BaseService
         }
 
         return new BonLivraisonService();
+    }
+
+    public static function produitService($getShared = true): ProduitService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('produitService');
+        }
+        return new ProduitService();
+    }
+
+    public static function demandeClientService($getShared = true): DemandeClientService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('demandeClientService');
+        }
+        return new DemandeClientService();
+    }
+
+    public static function attachmentService($getShared = true): AttachmentService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('attachmentService');
+        }
+        return new AttachmentService();
     }
 
     public static function logTokenHistoryUseCase($getShared = true): LogTokenHistoryUseCase
