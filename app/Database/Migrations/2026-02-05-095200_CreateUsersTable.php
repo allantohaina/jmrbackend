@@ -10,7 +10,6 @@ class CreateUsersTable extends Migration
         $this->forge->addField([
             'id' => [
                 'type' => 'UUID',
-                'default' => new \CodeIgniter\Database\RawSql('gen_random_uuid()'),
             ],
             'email' => [
                 'type' => 'VARCHAR',

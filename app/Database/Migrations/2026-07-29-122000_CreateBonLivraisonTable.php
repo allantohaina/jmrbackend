@@ -12,7 +12,6 @@ class CreateBonLivraisonTable extends Migration
             $this->forge->addField([
                 'id' => [
                     'type' => 'UUID',
-                    'default' => new \CodeIgniter\Database\RawSql('gen_random_uuid()'),
                 ],
                 'commande_id' => [
                     'type' => 'UUID',
@@ -33,7 +32,7 @@ class CreateBonLivraisonTable extends Migration
                     'null' => false,
                 ],
                 'articles' => [
-                    'type' => 'JSONB',
+                    'type' => 'JSON',
                     'null' => true,
                 ],
                 'statut' => [

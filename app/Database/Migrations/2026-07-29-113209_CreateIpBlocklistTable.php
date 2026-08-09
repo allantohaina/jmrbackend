@@ -12,7 +12,6 @@ class CreateIpBlocklistTable extends Migration
             $this->forge->addField([
                 'id' => [
                     'type' => 'UUID',
-                    'default' => new \CodeIgniter\Database\RawSql('gen_random_uuid()'),
                 ],
                 'ip_address' => [
                     'type' => 'VARCHAR',

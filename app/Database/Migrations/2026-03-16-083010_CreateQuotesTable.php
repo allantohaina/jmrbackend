@@ -11,7 +11,6 @@ class CreateQuotesTable extends Migration
         $this->forge->addField([
             'id' => [
                 'type' => 'UUID',
-                'default' => new \CodeIgniter\Database\RawSql('gen_random_uuid()'),
             ],
             'name' => [
                 'type' => 'VARCHAR',
