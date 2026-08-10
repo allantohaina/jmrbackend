@@ -115,6 +115,8 @@ $routes->get('/', static function () {
         $routes->get('blacklist', 'Blacklist::index');
         $routes->post('blacklist', 'Blacklist::create');
         $routes->delete('blacklist/(:segment)', 'Blacklist::delete/$1');
+
+        $routes->post('truncate', 'AdminData::truncateTestData');
     });
 
     // Site content (public read, admin write)
