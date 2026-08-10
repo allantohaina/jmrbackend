@@ -207,6 +207,121 @@ class UserService
         );
     }
 
+    public function createWorker(array $input, RequestInterface $request): Result
+    {
+        $model = new UserModel();
+
+        $data = [
+            'email' => $input['email'] ?? null,
+            'password' => $input['password'] ?? null,
+            'first_name' => $input['first_name'] ?? null,
+            'last_name' => $input['last_name'] ?? null,
+            'phone' => $input['phone'] ?? null,
+            'role' => $input['role'] ?? 'worker',
+            'department' => $input['department'] ?? null,
+            'position' => $input['position'] ?? null,
+            'hire_date' => $input['hire_date'] ?? null,
+            'cin' => $input['cin'] ?? null,
+            'profile_image' => $input['profile_image'] ?? null,
+        ];
+
+        $missing = $this->validateRequired($data, ['email', 'password', 'first_name', 'last_name']);
+        if (!empty($missing)) {
+            return Result::fail([
+                'error' => 'Champs obligatoires manquants.',
+                'missing' => $missing,
+            ], 400);
+        }
+
+        if (!in_array($data['role'], ['admin', 'worker'], true)) {
+            return Result::fail(['error' => 'Rôle invalide. Autorisés : admin, worker'], 400);
+        }
+
+        $emailVerification = $this->verifyEmail($data['email']);
+        if (!$emailVerification->isSuccess()) {
+            return $emailVerification;
+        }
+
+        if (!$model->insert($data)) {
+            return Result::fail($model->errors(), 400);
+        }
+
+        $userId = $model->getInsertID();
+        $user = $model->getUserById($userId);
+
+        return Result::created([
+            'message' => 'Employé créé avec succès.',
+            'user' => $user,
+        ]);
+    }
+
+    public function importWorkersCSV(string $csvContent, RequestInterface $request): Result
+    {
+        $lines = array_filter(array_map('trim', explode("\n", $csvContent)));
+        if (count($lines) < 2) {
+            return Result::fail(['error' => 'Le fichier CSV est vide ou ne contient pas de données.'], 400);
+        }
+
+        $header = str_getcsv(array_shift($lines));
+        $header = array_map('strtolower', array_map('trim', $header));
+
+        $required = ['email', 'password', 'first_name', 'last_name'];
+        $missing = array_diff($required, $header);
+        if (!empty($missing)) {
+            return Result::fail(['error' => 'Colonnes manquantes dans le CSV : ' . implode(', ', $missing)], 400);
+        }
+
+        $model = new UserModel();
+        $created = [];
+        $errors = [];
+        $lineNum = 1;
+
+        foreach ($lines as $line) {
+            $lineNum++;
+            if (empty($line)) continue;
+
+            $values = str_getcsv($line);
+            $row = array_combine($header, $values);
+
+            $data = [
+                'email' => $row['email'] ?? null,
+                'password' => $row['password'] ?? null,
+                'first_name' => $row['first_name'] ?? null,
+                'last_name' => $row['last_name'] ?? null,
+                'phone' => $row['phone'] ?? null,
+                'role' => $row['role'] ?? 'worker',
+                'department' => $row['department'] ?? null,
+                'position' => $row['position'] ?? null,
+                'hire_date' => $row['hire_date'] ?? null,
+                'cin' => $row['cin'] ?? null,
+            ];
+
+            $missingFields = $this->validateRequired($data, $required);
+            if (!empty($missingFields)) {
+                $errors[] = ['line' => $lineNum, 'email' => $data['email'] ?? 'N/A', 'error' => 'Champs manquants : ' . implode(', ', $missingFields)];
+                continue;
+            }
+
+            if (!in_array($data['role'], ['admin', 'worker'], true)) {
+                $data['role'] = 'worker';
+            }
+
+            if (!$model->insert($data)) {
+                $modelErrors = $model->errors();
+                $errors[] = ['line' => $lineNum, 'email' => $data['email'], 'error' => implode(', ', $modelErrors)];
+                continue;
+            }
+
+            $created[] = ['line' => $lineNum, 'email' => $data['email'], 'role' => $data['role']];
+        }
+
+        return Result::ok([
+            'message' => count($created) . ' employé(s) importé(s), ' . count($errors) . ' erreur(s).',
+            'created' => $created,
+            'errors' => $errors,
+        ]);
+    }
+
     public function listUsers(): Result
     {
         $model = new UserModel();

@@ -131,6 +131,42 @@ class Users extends ResourceController
         }
     }
 
+    public function createWorker()
+    {
+        try {
+            $input = $this->getInputData();
+            $result = $this->userService()->createWorker($input, $this->request);
+            return $this->respondResult($result);
+        } catch (Throwable $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    public function importCSV()
+    {
+        try {
+            $file = $this->request->getFile('file');
+            if (!$file || !$file->isValid()) {
+                return $this->fail(['error' => 'Aucun fichier fourni.'], 400);
+            }
+
+            $mimeType = $file->getClientMimeType();
+            if ($mimeType !== 'text/csv' && !$file->getClientExtension() === 'csv') {
+                return $this->fail(['error' => 'Format de fichier invalide. Utilisez un .csv'], 400);
+            }
+
+            $csvContent = file_get_contents($file->getTempName());
+            if ($csvContent === false) {
+                return $this->fail(['error' => 'Impossible de lire le fichier.'], 500);
+            }
+
+            $result = $this->userService()->importWorkersCSV($csvContent, $this->request);
+            return $this->respondResult($result);
+        } catch (Throwable $e) {
+            return $this->handleException($e);
+        }
+    }
+
     public function clientsWithRevenue()
     {
         try {

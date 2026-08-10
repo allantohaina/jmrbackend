@@ -44,6 +44,8 @@ $routes->get('/', static function () {
         $routes->group('', ['filter' => 'admin'], function($routes) {
             $routes->get('/', 'Users::index');
             $routes->get('clients-revenue', 'Users::clientsWithRevenue');
+            $routes->post('worker', 'Users::createWorker');
+            $routes->post('import-csv', 'Users::importCSV');
             $routes->get('(:segment)', 'Users::show/$1');
             $routes->put('(:segment)', 'Users::update/$1');
             $routes->delete('(:segment)', 'Users::delete/$1');

@@ -21,6 +21,12 @@ class UserModel extends Model
         'birth_date',
         'country',
         'address',
+        'profile_image',
+        'department',
+        'position',
+        'hire_date',
+        'cin',
+        'documents',
         'role',
         'is_active',
         'is_privileged',
@@ -48,6 +54,11 @@ class UserModel extends Model
         'country' => 'permit_empty|max_length[2]',
         'address' => 'permit_empty|max_length[255]',
         'role' => 'permit_empty|in_list[admin,user,worker]',
+        'profile_image' => 'permit_empty|max_length[500]',
+        'department' => 'permit_empty|max_length[100]',
+        'position' => 'permit_empty|max_length[100]',
+        'hire_date' => 'permit_empty|valid_date',
+        'cin' => 'permit_empty|max_length[50]',
     ];
 
     protected $validationMessages = [
