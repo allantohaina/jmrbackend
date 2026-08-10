@@ -17,6 +17,7 @@ $routes->get('/', static function () {
         });
 
         $routes->get('altcha/challenge', 'Altcha::challenge');
+        $routes->get('exchange-rates', 'ExchangeRate::index');
 
         $routes->post('users/register', 'Users::register', ['filter' => 'ratelimit:auth']);
         $routes->post('users/login', 'Users::login', ['filter' => 'ratelimit:login']);
