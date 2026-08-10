@@ -32,6 +32,11 @@ class QuoteDraftModel extends Model
         return $data;
     }
 
+    public function generateId(): string
+    {
+        return $this->uuidV4();
+    }
+
     private function uuidV4(): string
     {
         $bytes = random_bytes(16);

@@ -45,11 +45,12 @@ class QuoteDrafts extends ResourceController
                 return $this->respond($saved);
             }
 
+            $draftId = $model->generateId();
             $model->save([
+                'id' => $draftId,
                 'client_id' => $clientId,
                 'payload' => json_encode($input),
             ]);
-            $draftId = (string) $model->getInsertID();
             $saved = $model->findForClient($draftId, (string) $clientId);
             return $this->respondCreated($saved);
         } catch (Throwable $e) {
