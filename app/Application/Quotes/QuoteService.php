@@ -121,7 +121,7 @@ class QuoteService
             'delai_souhaite' => $data['delai_souhaite'] ?? null,
             'request_type' => $data['request_type'] ?? 'new',
             'modify_code' => $data['modify_code'] ?? null,
-            'status' => $data['status'] ?? 'draft',
+            'status' => $data['status'] ?? 'pending',
             'client_id' => $data['client_id'] ?? null,
             'produit_id' => $data['produit_id'] ?? null,
             'matiere_fournie_par' => $data['matiere_fournie_par'] ?? 'atelier',

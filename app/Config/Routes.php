@@ -99,6 +99,14 @@ $routes->get('/', static function () {
         });
     });
 
+    // Quote drafts (unsent devis, per client)
+    $routes->group('quote-drafts', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'QuoteDrafts::index');
+        $routes->post('/', 'QuoteDrafts::save');
+        $routes->post('(:segment)/submit', 'QuoteDrafts::submit/$1');
+        $routes->delete('(:segment)', 'QuoteDrafts::remove/$1');
+    });
+
     $routes->group('notifications', ['filter' => 'auth'], function($routes) {
         $routes->get('/', 'Notifications::index');
         $routes->put('read-all', 'Notifications::markAllRead');
