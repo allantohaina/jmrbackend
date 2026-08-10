@@ -54,6 +54,8 @@ class QuoteModel extends Model
         'prix_total_calcule',
         'admin_signature_name',
         'admin_signature_at',
+        'confirmation_deadline',
+        'confirmation_days',
     ];
 
     // Dates

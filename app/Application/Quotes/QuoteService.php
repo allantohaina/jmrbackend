@@ -275,10 +275,18 @@ class QuoteService
         if (!$quote) return Result::notFound('Quote not found');
         $updateData = [];
         if ($status) $updateData['status'] = $status;
+
+        // Set confirmation deadline when sending devis to client
+        if ($status === 'sent' && !($quote['confirmation_deadline'] ?? null)) {
+            $days = (int)($additionalData['confirmation_days'] ?? $quote['confirmation_days'] ?? 7);
+            $updateData['confirmation_days'] = $days;
+            $updateData['confirmation_deadline'] = date('Y-m-d H:i:s', time() + ($days * 86400));
+        }
+
         foreach ($additionalData as $key => $value) {
             $forbidden = ['prix_unitaire_calcule', 'prix_total_calcule', 'cout_matiere', 'cout_main_oeuvre', 'cout_frais_generaux'];
             if (in_array($key, $forbidden, true)) continue;
-            if (in_array($key, ['amount', 'deposit_amount', 'balance_amount', 'deposit_paid', 'balance_paid', 'client_id', 'produit_id'])) {
+            if (in_array($key, ['amount', 'deposit_amount', 'balance_amount', 'deposit_paid', 'balance_paid', 'client_id', 'produit_id', 'confirmation_days'])) {
                 $updateData[$key] = $value;
             }
         }
@@ -316,6 +324,10 @@ class QuoteService
         }
         if (($quote['status'] ?? null) !== 'sent') {
             return Result::fail(['message' => 'Ce devis ne peut pas être confirmé dans son état actuel.'], 422);
+        }
+        // Check confirmation deadline
+        if (!empty($quote['confirmation_deadline']) && strtotime($quote['confirmation_deadline']) < time()) {
+            return Result::fail(['message' => 'Le délai de confirmation a expiré. Contactez notre équipe pour recevoir un nouveau devis.'], 410);
         }
         $model = new QuoteModel();
         if (!$model->update($id, ['status' => 'accepted'])) return Result::fail($model->errors(), 400);
