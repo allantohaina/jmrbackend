@@ -254,7 +254,7 @@ class QuoteService
         $quotes = $model->getAllQuotes($perPage, $offset);
         $total = $model->countAll();
         $counts = [
-            'draft' => 0, 'sent' => 0, 'accepted' => 0, 'rejected' => 0, 'expired' => 0, 'pending' => 0,
+            'draft' => 0, 'needs_info' => 0, 'sent' => 0, 'accepted' => 0, 'rejected' => 0, 'expired' => 0, 'pending' => 0,
         ];
         $all = $model->select('status')->findAll();
         foreach ($all as $q) {
