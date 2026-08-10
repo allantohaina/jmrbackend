@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
+use App\Traits\UuidTrait;
 
 class NotificationModel extends Model
 {
+    use UuidTrait;
+
     protected $table = 'notifications';
     protected $primaryKey = 'id';
     protected $useAutoIncrement = false;
@@ -22,7 +25,7 @@ class NotificationModel extends Model
 
     protected function generateUUID(array $data): array
     {
-        if (empty($data['data']['id'])) $data['data']['id'] = \App\Traits\UuidTrait::uuidV4();
+        if (empty($data['data']['id'])) $data['data']['id'] = static::uuidV4();
         return $data;
     }
 }
