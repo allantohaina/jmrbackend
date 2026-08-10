@@ -244,7 +244,7 @@ class QuoteService
     {
         $model = new QuoteModel();
         if ($userId) {
-            $quotes = $model->where('email', $request->user['email'] ?? '')->orderBy('created_at', 'DESC')->findAll();
+            $quotes = $model->where('client_id', $userId)->orderBy('created_at', 'DESC')->findAll();
             $total = count($quotes);
             return Result::ok(['data' => $quotes, 'total' => $total]);
         }
