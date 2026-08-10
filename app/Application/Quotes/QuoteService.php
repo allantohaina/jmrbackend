@@ -87,8 +87,9 @@ class QuoteService
         $attachments = $files['technical_files'] ?? $files['technical_files[]'] ?? [];
         $attachments = is_array($attachments) ? $attachments : [$attachments];
         foreach ($attachments as $file) {
-            if (!$file || !$file->isValid() || $file->hasMoved()) continue;
-            if ($file->getSize() > 10 * 1024 * 1024 || !in_array($file->getMimeType(), $allowedMimeTypes, true)) {
+            if (!$file || !($file instanceof \CodeIgniter\HTTP\Files\UploadedFile) || !$file->isValid() || $file->hasMoved()) continue;
+            $fileMimeType = $file->getMimeType();
+            if ($file->getSize() > 10 * 1024 * 1024 || !in_array($fileMimeType, $allowedMimeTypes, true)) {
                 return Result::fail(['message' => 'Format de fichier non autorisé ou fichier trop volumineux.'], 422);
             }
             $newName = $file->getRandomName();
@@ -96,7 +97,7 @@ class QuoteService
             $uploadedFiles[] = [
                 'name' => $file->getName(),
                 'url' => base_url('uploads/' . $newName),
-                'type' => $file->getMimeType(),
+                'type' => $fileMimeType,
             ];
         }
 
