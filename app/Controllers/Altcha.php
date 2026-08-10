@@ -28,26 +28,31 @@ class Altcha extends ResourceController
 
     public function challenge(): ResponseInterface
     {
-        $altcha = $this->getAltcha();
-        $algorithm = new Pbkdf2();
+        try {
+            $altcha = $this->getAltcha();
+            $algorithm = new Pbkdf2();
 
-        $challenge = $altcha->createChallenge(new CreateChallengeOptions(
-            algorithm: $algorithm,
-            cost: 5000,
-            counter: random_int(5000, 10000),
-            expiresAt: time() + 600,
-        ));
+            $challenge = $altcha->createChallenge(new CreateChallengeOptions(
+                algorithm: $algorithm,
+                cost: 5000,
+                counter: random_int(5000, 10000),
+                expiresAt: time() + 600,
+            ));
 
-        return $this->respond([
-            'challenge' => [
-                'algorithm' => $challenge->algorithm,
-                'challenge' => $challenge->challenge,
-                'salt' => $challenge->salt,
+            return $this->respond([
+                'challenge' => [
+                    'algorithm' => $challenge->algorithm,
+                    'challenge' => $challenge->challenge,
+                    'salt' => $challenge->salt,
+                    'signature' => $challenge->signature,
+                    'maxN' => $challenge->maxN,
+                ],
                 'signature' => $challenge->signature,
-                'maxN' => $challenge->maxN,
-            ],
-            'signature' => $challenge->signature,
-        ]);
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'ALTCHA challenge failed: ' . $e->getMessage());
+            return $this->failServerError('ALTCHA unavailable');
+        }
     }
 
     public function verify(): ResponseInterface
