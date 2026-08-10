@@ -111,10 +111,7 @@ class Filters extends BaseFilters
     public array $filters = [
         'connectiontrace' => ['before' => ['api/*'], 'after' => ['api/*']],
         'firewall' => ['before' => ['api/*']],
-        'cors'     => [
-            'before' => ['api/*'],
-            'after'  => ['api/*'],
-        ],
+        // CORS handled by .htaccess — do NOT enable 'cors' filter here to avoid duplicates
         'ratelimit' => ['before' => ['api/users/register', 'api/users/login', 'api/users/refresh']],
     ];
 }
