@@ -40,6 +40,11 @@ class Quotes extends ResourceController
             $input = $this->getInputData();
             unset($input['altcha']);
 
+            $userId = $this->request->user['id'] ?? null;
+            if ($userId) {
+                $input['client_id'] = $userId;
+            }
+
             $result = $this->quoteService()->create($input, $this->request);
 
             if ($result->isSuccess()) {

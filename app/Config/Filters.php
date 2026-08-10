@@ -39,6 +39,7 @@ class Filters extends BaseFilters
         'ratelimit'     => \App\Filters\RateLimitFilter::class,
         'firewall'      => \App\Filters\FirewallFilter::class,
         'connectiontrace' => \App\Filters\ConnectionTraceFilter::class,
+        'optionalauth'    => \App\Filters\OptionalAuthFilter::class,
     ];
 
     /**

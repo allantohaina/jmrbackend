@@ -83,7 +83,7 @@ $routes->get('/', static function () {
 
     // Quotes
     $routes->group('quotes', function($routes) {
-        $routes->post('/', 'Quotes::create'); // Public for creating quote requests
+        $routes->post('/', 'Quotes::create', ['filter' => 'optionalauth']);
         $routes->get('share/(:any)', 'Quotes::share/$1'); // Public share by hash
         $routes->group('', ['filter' => 'auth'], function($routes) {
             $routes->get('notifications', 'Quotes::notifications');
