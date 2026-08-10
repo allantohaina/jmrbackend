@@ -27,6 +27,7 @@ class QuoteModel extends Model
         'quantite',
         'finitions',
         'delai_souhaite',
+        'date_livraison_prevue',
         'request_type',
         'modify_code',
         'status',

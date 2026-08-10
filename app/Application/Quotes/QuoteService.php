@@ -286,7 +286,7 @@ class QuoteService
         foreach ($additionalData as $key => $value) {
             $forbidden = ['prix_unitaire_calcule', 'prix_total_calcule', 'cout_matiere', 'cout_main_oeuvre', 'cout_frais_generaux'];
             if (in_array($key, $forbidden, true)) continue;
-            if (in_array($key, ['amount', 'deposit_amount', 'balance_amount', 'deposit_paid', 'balance_paid', 'client_id', 'produit_id', 'confirmation_days'])) {
+            if (in_array($key, ['amount', 'deposit_amount', 'balance_amount', 'deposit_paid', 'balance_paid', 'client_id', 'produit_id', 'confirmation_days', 'date_livraison_prevue'])) {
                 $updateData[$key] = $value;
             }
         }
