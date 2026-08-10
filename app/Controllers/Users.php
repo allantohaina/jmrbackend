@@ -6,6 +6,7 @@ use App\Application\Shared\Result;
 use App\Application\Users\UserService;
 use App\Exceptions\ApiException;
 use App\Exceptions\UnknownException;
+use App\Libraries\AltchaVerify;
 use CodeIgniter\RESTful\ResourceController;
 use Throwable;
 
@@ -19,7 +20,13 @@ class Users extends ResourceController
     public function register()
     {
         try {
-            $result = $this->userService()->register($this->getInputData(), $this->request);
+            $input = $this->getInputData();
+            $altchaResult = (new AltchaVerify())->verifyToken($input['altcha'] ?? null);
+            if (!$altchaResult['verified']) {
+                return $this->failUnauthorized($altchaResult['error']);
+            }
+            unset($input['altcha']);
+            $result = $this->userService()->register($input, $this->request);
             return $this->respondResult($result);
         } catch (Throwable $e) {
             return $this->handleException($e);
@@ -29,7 +36,13 @@ class Users extends ResourceController
     public function login()
     {
         try {
-            $result = $this->userService()->login($this->getInputData(), $this->request);
+            $input = $this->getInputData();
+            $altchaResult = (new AltchaVerify())->verifyToken($input['altcha'] ?? null);
+            if (!$altchaResult['verified']) {
+                return $this->failUnauthorized($altchaResult['error']);
+            }
+            unset($input['altcha']);
+            $result = $this->userService()->login($input, $this->request);
             return $this->respondResult($result);
         } catch (Throwable $e) {
             return $this->handleException($e);

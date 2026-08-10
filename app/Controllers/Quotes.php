@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Application\Quotes\QuoteService;
+use App\Libraries\AltchaVerify;
 use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\RESTful\ResourceController;
 use Throwable;
@@ -38,6 +39,14 @@ class Quotes extends ResourceController
     {
         try {
             $input = $this->getInputData();
+
+            $altchaToken = $input['altcha'] ?? $this->request->getPost('altcha') ?? null;
+            $altchaResult = (new AltchaVerify())->verifyToken($altchaToken);
+            if (!$altchaResult['verified']) {
+                return $this->failUnauthorized($altchaResult['error']);
+            }
+            unset($input['altcha']);
+
             $result = $this->quoteService()->create($input, $this->request);
 
             if ($result->isSuccess()) {

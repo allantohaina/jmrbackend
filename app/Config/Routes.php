@@ -10,16 +10,18 @@ $routes->get('/', static function () {
     return service('response')->setStatusCode(403)->setBody('Forbidden');
 });
 
-// Public routes (no authentication required)
-$routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
-    $routes->options('(:any)', static function () {
-        return service('response')->setStatusCode(204);
-    });
+    // Public routes (no authentication required)
+    $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
+        $routes->options('(:any)', static function () {
+            return service('response')->setStatusCode(204);
+        });
 
-    $routes->post('users/register', 'Users::register', ['filter' => 'ratelimit:auth']);
-    $routes->post('users/login', 'Users::login', ['filter' => 'ratelimit:login']);
-    $routes->post('users/refresh', 'Users::refresh', ['filter' => 'ratelimit:auth']);
-    $routes->post('users/logout', 'Users::logout', ['filter' => 'ratelimit:auth']);
+        $routes->get('altcha/challenge', 'Altcha::challenge');
+
+        $routes->post('users/register', 'Users::register', ['filter' => 'ratelimit:auth']);
+        $routes->post('users/login', 'Users::login', ['filter' => 'ratelimit:login']);
+        $routes->post('users/refresh', 'Users::refresh', ['filter' => 'ratelimit:auth']);
+        $routes->post('users/logout', 'Users::logout', ['filter' => 'ratelimit:auth']);
 
     $routes->group('legal', function($routes) {
         $routes->get('privacy', 'Legal::privacy');
