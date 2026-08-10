@@ -75,12 +75,11 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
-            // 'honeypot',
-            // 'csrf',
+            'honeypot',
+            'csrf',
             'invalidchars',
         ],
         'after' => [
-            // 'honeypot',
             'secureheaders',
         ],
     ];
@@ -111,7 +110,7 @@ class Filters extends BaseFilters
      */
     public array $filters = [
         'connectiontrace' => ['before' => ['api/*'], 'after' => ['api/*']],
-        // 'firewall' => ['before' => ['api/*']], // Temporairement désactivé pour le développement
+        'firewall' => ['before' => ['api/*']],
         'cors'     => [
             'before' => ['api/*'],
             'after'  => ['api/*'],
