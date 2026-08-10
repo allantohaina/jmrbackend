@@ -3,7 +3,6 @@
 namespace App\Controllers;
 
 use CodeIgniter\HTTP\ResponseInterface;
-use App\Libraries\AltchaVerify;
 use App\Models\UserModel;
 
 class AdminReset extends BaseController
@@ -25,11 +24,6 @@ class AdminReset extends BaseController
         }
 
         $data = $this->request->getJSON(true);
-
-        $altchaResult = (new AltchaVerify())->verifyToken($data['altcha'] ?? null);
-        if (!$altchaResult['verified']) {
-            return $this->respond(['status' => 'error', 'message' => $altchaResult['error']], 403);
-        }
         unset($data['altcha']);
 
         $email = $data['email'] ?? null;

@@ -16,7 +16,6 @@ $routes->get('/', static function () {
             return service('response')->setStatusCode(204);
         });
 
-        $routes->get('altcha/challenge', 'Altcha::challenge');
         $routes->get('exchange-rates', 'ExchangeRate::index');
 
         $routes->post('users/register', 'Users::register', ['filter' => 'ratelimit:auth']);
