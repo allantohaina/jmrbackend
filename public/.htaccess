@@ -46,3 +46,16 @@ Options -Indexes
 # Disable server signature start
 ServerSignature Off
 # Disable server signature end
+
+# CORS headers for frontend
+<IfModule mod_headers.c>
+    SetEnvIf Origin "^https?://(jmrtextile\.com|www\.jmrtextile\.com|admin\.jmrtextile\.com)$" CORS_ALLOW_ORIGIN=$0
+    Header set Access-Control-Allow-Origin "%{CORS_ALLOW_ORIGIN}e" env=CORS_ALLOW_ORIGIN
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" env=CORS_ALLOW_ORIGIN
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With" env=CORS_ALLOW_ORIGIN
+    Header set Access-Control-Allow-Credentials "true" env=CORS_ALLOW_ORIGIN
+
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=204,L]
+</IfModule>
