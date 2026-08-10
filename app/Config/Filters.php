@@ -76,7 +76,6 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             'honeypot',
-            'csrf',
             'invalidchars',
         ],
         'after' => [
@@ -111,7 +110,10 @@ class Filters extends BaseFilters
     public array $filters = [
         'connectiontrace' => ['before' => ['api/*'], 'after' => ['api/*']],
         'firewall' => ['before' => ['api/*']],
-        // CORS handled by .htaccess — do NOT enable 'cors' filter here to avoid duplicates
+        'cors'     => [
+            'before' => ['api/*'],
+            'after'  => ['api/*'],
+        ],
         'ratelimit' => ['before' => ['api/users/register', 'api/users/login', 'api/users/refresh']],
     ];
 }

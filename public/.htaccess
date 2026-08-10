@@ -2,25 +2,6 @@
 Options -Indexes
 
 # ----------------------------------------------------------------------
-# CORS for frontend
-# ----------------------------------------------------------------------
-<IfModule mod_headers.c>
-    SetEnvIf Origin "^https?://(jmrtextile\.com|www\.jmrtextile\.com)$" AccessControlAllowOrigin=$0
-    Header set Access-Control-Allow-Origin "%{AccessControlAllowOrigin}e" env=AccessControlAllowOrigin
-    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" env=AccessControlAllowOrigin
-    Header set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With" env=AccessControlAllowOrigin
-    Header set Access-Control-Allow-Credentials "true" env=AccessControlAllowOrigin
-    Header set Access-Control-Max-Age "7200" env=AccessControlAllowOrigin
-</IfModule>
-
-# Handle OPTIONS preflight
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteCond %{REQUEST_METHOD} OPTIONS
-    RewriteRule ^(.*)$ $1 [R=204,L]
-</IfModule>
-
-# ----------------------------------------------------------------------
 # Rewrite engine
 # ----------------------------------------------------------------------
 <IfModule mod_rewrite.c>
