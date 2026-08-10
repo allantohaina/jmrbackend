@@ -87,6 +87,7 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
             $routes->get('notifications', 'Quotes::notifications');
             $routes->put('notifications/(:segment)/read', 'Quotes::markNotificationRead/$1');
             $routes->post('(:segment)/confirm', 'Quotes::confirm/$1');
+            $routes->post('(:segment)/convert-to-commande', 'Quotes::convertToCommande/$1');
             $routes->get('/', 'Quotes::index');
             $routes->get('(:segment)', 'Quotes::show/$1');
             $routes->put('(:segment)/status', 'Quotes::updateStatus/$1');
@@ -152,6 +153,34 @@ $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
         $routes->put('(:segment)', 'BonLivraison::update/$1');
         $routes->delete('(:segment)', 'BonLivraison::delete/$1');
         $routes->put('(:segment)/sign', 'BonLivraison::sign/$1');
+    });
+
+    // Produits (catalogue)
+    $routes->group('produits', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'Produits::index');
+        $routes->get('categories', 'Produits::categories');
+        $routes->get('(:segment)', 'Produits::show/$1');
+        $routes->post('/', 'Produits::create');
+        $routes->put('(:segment)', 'Produits::update/$1');
+        $routes->delete('(:segment)', 'Produits::delete/$1');
+    });
+
+    // Demandes client
+    $routes->group('demandes-client', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'DemandesClient::index');
+        $routes->get('pending-count', 'DemandesClient::pendingCount');
+        $routes->get('(:segment)', 'DemandesClient::show/$1');
+        $routes->post('/', 'DemandesClient::create');
+        $routes->put('(:segment)', 'DemandesClient::update/$1');
+        $routes->put('(:segment)/refuse', 'DemandesClient::refuse/$1');
+    });
+
+    // Attachments (pièces jointes)
+    $routes->group('attachments', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'Attachments::index');
+        $routes->get('(:segment)', 'Attachments::show/$1');
+        $routes->post('/', 'Attachments::create');
+        $routes->delete('(:segment)', 'Attachments::delete/$1');
     });
 
     // Admin reset (protected by secret key, not auth)

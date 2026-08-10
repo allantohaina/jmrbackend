@@ -126,6 +126,24 @@ class Quotes extends ResourceController
         }
     }
 
+    public function convertToCommande($id = null): ResponseInterface
+    {
+        try {
+            $actor = $this->request->user ?? [];
+            if (($actor['role'] ?? null) !== 'admin') {
+                return $this->failForbidden('Seul un administrateur peut créer une commande.');
+            }
+            $result = $this->quoteService()->convertToCommande((string)$id);
+            if (!$result->isSuccess()) {
+                return $this->fail($result->getPayload(), $result->getStatus());
+            }
+            return $this->respondCreated($result->getPayload());
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes convertToCommande error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
     public function notifications(): ResponseInterface
     {
         try {
