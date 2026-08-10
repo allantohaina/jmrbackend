@@ -23,6 +23,7 @@ class UserModel extends Model
         'address',
         'role',
         'is_active',
+        'is_privileged',
         'failed_login_count',
         'locked_until',
         'last_failed_login_at',
@@ -170,7 +171,7 @@ class UserModel extends Model
      */
     public function getAllUsers(): array
     {
-        $this->select('id, email, first_name, last_name, phone, role, is_active, country, address, birth_date, last_login_at, created_at, updated_at, deleted_at');
+        $this->select('id, email, first_name, last_name, phone, role, is_active, is_privileged, country, address, birth_date, last_login_at, created_at, updated_at, deleted_at');
         $users = $this->findAll();
         return array_map(function ($user) {
             unset($user['password_hash']);
@@ -189,6 +190,23 @@ class UserModel extends Model
         return $this->update($id, $data);
     }
 
+
+    /**
+     * Get clients with cumulative revenue from delivered commandes
+     */
+    public function getClientsWithRevenue(): array
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('users u');
+        $builder->select('u.id, u.email, u.first_name, u.last_name, u.phone, u.role, u.is_active, u.is_privileged, u.created_at');
+        $builder->select('COALESCE(SUM(CASE WHEN c.statut_production = \'Livrée\' THEN c.total ELSE 0 END), 0) as cumulative_revenue');
+        $builder->join('commandes c', 'c.client_id = u.id', 'left');
+        $builder->where('u.role', 'user');
+        $builder->where('u.deleted_at', null);
+        $builder->groupBy('u.id');
+        $builder->orderBy('cumulative_revenue', 'DESC');
+        return $builder->get()->getResultArray();
+    }
 
     /**
      * Strict validation rules for updates (password optional but strict if provided)

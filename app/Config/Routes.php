@@ -43,9 +43,11 @@ $routes->get('/', static function () {
         // Admin only routes
         $routes->group('', ['filter' => 'admin'], function($routes) {
             $routes->get('/', 'Users::index');
+            $routes->get('clients-revenue', 'Users::clientsWithRevenue');
             $routes->get('(:segment)', 'Users::show/$1');
             $routes->put('(:segment)', 'Users::update/$1');
             $routes->delete('(:segment)', 'Users::delete/$1');
+            $routes->put('(:segment)/privilege', 'Users::togglePrivilege/$1');
         });
     });
 

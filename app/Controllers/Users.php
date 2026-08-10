@@ -115,6 +115,33 @@ class Users extends ResourceController
         }
     }
 
+    public function togglePrivilege($id = null)
+    {
+        try {
+            $model = new \App\Models\UserModel();
+            $user = $model->find($id);
+            if (!$user) {
+                return $this->failNotFound('Client introuvable');
+            }
+            $newVal = !(bool) ($user['is_privileged'] ?? false);
+            $model->update($id, ['is_privileged' => $newVal]);
+            return $this->respond(['data' => ['id' => $id, 'is_privileged' => $newVal]]);
+        } catch (\Throwable $e) {
+            return $this->fail(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function clientsWithRevenue()
+    {
+        try {
+            $model = new \App\Models\UserModel();
+            $clients = $model->getClientsWithRevenue();
+            return $this->respond(['data' => $clients]);
+        } catch (\Throwable $e) {
+            return $this->fail(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function refresh()
     {
         try {
