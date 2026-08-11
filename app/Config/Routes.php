@@ -97,6 +97,7 @@ $routes->get('/', static function () {
             $routes->get('/', 'Quotes::index');
             $routes->get('(:segment)', 'Quotes::show/$1');
             $routes->put('(:segment)/status', 'Quotes::updateStatus/$1');
+            $routes->put('(:segment)', 'Quotes::update/$1');
             $routes->put('(:segment)/sign', 'Quotes::sign/$1');
         });
     });

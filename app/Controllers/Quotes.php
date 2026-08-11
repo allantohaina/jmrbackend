@@ -96,6 +96,48 @@ class Quotes extends ResourceController
         }
     }
 
+    public function update($id = null): ResponseInterface
+    {
+        try {
+            $input = $this->getInputData();
+            $status = $input['status'] ?? null;
+            $additionalData = array_filter($input, fn($key) => !in_array($key, ['status']), ARRAY_FILTER_USE_KEY);
+
+            $actor = $this->request->user ?? [];
+            $quote = (new \App\Models\QuoteModel())->getQuoteById((string)$id);
+            if (!$quote) {
+                return $this->failNotFound('Devis introuvable');
+            }
+
+            $isAdmin = ($actor['role'] ?? null) === 'admin';
+            $isOwner = !empty($quote['client_id']) && (string)$quote['client_id'] === (string)($actor['id'] ?? '');
+            if (!$isOwner) {
+                $isOwner = !empty($quote['email'])
+                    && !empty($actor['email'])
+                    && strtolower((string)$quote['email']) === strtolower((string)$actor['email']);
+            }
+            if (!$isAdmin && !$isOwner) {
+                return $this->failForbidden('Vous ne pouvez pas modifier ce devis.');
+            }
+
+            // A client peut uniquement envoyer / accepter / refuser son propre devis
+            if (!$isAdmin && $isOwner && $status && !in_array($status, ['pending', 'accepted', 'rejected'], true)) {
+                return $this->failForbidden('Transition de statut non autorisée pour ce devis.');
+            }
+
+            $result = $this->quoteService()->updateStatus($id, $status, $additionalData, $actor);
+
+            if ($result->isSuccess()) {
+                return $this->respond($result->getPayload());
+            }
+
+            return $this->fail($result->getPayload(), $result->getStatus());
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes update error: ' . $e->getMessage());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
     public function updateStatus($id = null): ResponseInterface
     {
         try {
