@@ -63,7 +63,7 @@ class QuoteAddonService
             return Result::fail(['error' => 'Erreur lors de la mise à jour.'], 500);
         }
 
-        // If addon is included, add its price to the quote's balance_amount
+        // If addon is included, add its price to the quote's balance_amount and sync tranche 2
         if ($status === 'included' && $price !== null) {
             $quote = $this->quoteModel->find($row['quote_id']);
             if ($quote) {
@@ -71,6 +71,25 @@ class QuoteAddonService
                 $this->quoteModel->update($row['quote_id'], [
                     'balance_amount' => $currentBalance + $price,
                 ]);
+
+                // Sync tranche 2 payment amount with updated balance
+                $paymentService = new \App\Application\Payments\PaymentService();
+                $paymentService->syncTranche2Amount((string)$row['quote_id']);
+            }
+        }
+
+        // If addon is rejected, subtract its price from balance_amount
+        if ($status === 'rejected' && $price !== null) {
+            $quote = $this->quoteModel->find($row['quote_id']);
+            if ($quote) {
+                $currentBalance = (float)($quote['balance_amount'] ?? 0);
+                $newBalance = max(0, $currentBalance - $price);
+                $this->quoteModel->update($row['quote_id'], [
+                    'balance_amount' => $newBalance,
+                ]);
+
+                $paymentService = new \App\Application\Payments\PaymentService();
+                $paymentService->syncTranche2Amount((string)$row['quote_id']);
             }
         }
 

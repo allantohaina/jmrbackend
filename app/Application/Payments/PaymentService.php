@@ -71,5 +71,63 @@ class PaymentService
         if (!empty($update)) {
             $quoteModel->update($quoteId, $update);
         }
+
+        // Auto-create tranche 2 (balance) when tranche 1 (deposit) is verified
+        if ($phase === 'deposit') {
+            $this->createTranche2IfMissing($quoteId);
+        }
+    }
+
+    private function createTranche2IfMissing(string $quoteId): void
+    {
+        $existing = $this->model->where('quote_id', $quoteId)
+            ->where('phase', 'balance')
+            ->first();
+        if ($existing) return;
+
+        $quoteModel = new \App\Models\QuoteModel();
+        $quote = $quoteModel->find($quoteId);
+        if (!$quote) return;
+
+        $depositAmount = (float)($quote['deposit_amount'] ?? 0);
+        $totalAmount = (float)($quote['amount'] ?? 0);
+        $balanceAmount = (float)($quote['balance_amount'] ?? 0);
+
+        // Balance = total - deposit + any addon additions to balance_amount
+        $balance = $balanceAmount > 0 ? $balanceAmount : ($totalAmount - $depositAmount);
+        if ($balance <= 0) return;
+
+        $this->model->insert([
+            'quote_id' => $quoteId,
+            'phase' => 'balance',
+            'amount' => $balance,
+            'status' => 'submitted',
+        ]);
+
+        $quoteModel->update($quoteId, [
+            'balance_amount' => $balance,
+            'balance_paid' => false,
+        ]);
+    }
+
+    public function syncTranche2Amount(string $quoteId): void
+    {
+        $quoteModel = new \App\Models\QuoteModel();
+        $quote = $quoteModel->find($quoteId);
+        if (!$quote) return;
+
+        $totalAmount = (float)($quote['amount'] ?? 0);
+        $depositAmount = (float)($quote['deposit_amount'] ?? 0);
+        $balanceAmount = (float)($quote['balance_amount'] ?? 0);
+
+        $newBalance = $balanceAmount > 0 ? $balanceAmount : ($totalAmount - $depositAmount);
+
+        $existing = $this->model->where('quote_id', $quoteId)
+            ->where('phase', 'balance')
+            ->first();
+
+        if ($existing && (float)($existing['amount'] ?? 0) !== $newBalance && $existing['status'] !== 'verified') {
+            $this->model->update($existing['id'], ['amount' => $newBalance]);
+        }
     }
 }
