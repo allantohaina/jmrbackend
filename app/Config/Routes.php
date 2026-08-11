@@ -109,6 +109,31 @@ $routes->get('/', static function () {
         $routes->delete('(:segment)', 'QuoteDrafts::remove/$1');
     });
 
+    // Quote Checkpoints
+    $routes->group('quote-checkpoints', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'QuoteCheckpoints::index');
+        $routes->get('(:segment)', 'QuoteCheckpoints::show/$1');
+        $routes->post('/', 'QuoteCheckpoints::create');
+        $routes->put('(:segment)/validate', 'QuoteCheckpoints::validate/$1');
+        $routes->delete('(:segment)', 'QuoteCheckpoints::delete/$1');
+    });
+
+    // Quote Addons
+    $routes->group('quote-addons', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'QuoteAddons::index');
+        $routes->get('(:segment)', 'QuoteAddons::show/$1');
+        $routes->post('/', 'QuoteAddons::create');
+        $routes->put('(:segment)/status', 'QuoteAddons::updateStatus/$1');
+        $routes->delete('(:segment)', 'QuoteAddons::delete/$1');
+    });
+
+    // Payments
+    $routes->group('payments', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'PaymentsController::index');
+        $routes->get('(:segment)', 'PaymentsController::show/$1');
+        $routes->put('(:segment)/status', 'PaymentsController::updateStatus/$1');
+    });
+
     $routes->group('notifications', ['filter' => 'auth'], function($routes) {
         $routes->get('/', 'Notifications::index');
         $routes->put('read-all', 'Notifications::markAllRead');

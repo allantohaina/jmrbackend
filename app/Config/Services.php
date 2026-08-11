@@ -119,6 +119,30 @@ class Services extends BaseService
         );
     }
 
+    public static function quoteCheckpointService($getShared = true): \App\Application\QuoteCheckpoints\QuoteCheckpointService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('quoteCheckpointService');
+        }
+        return new \App\Application\QuoteCheckpoints\QuoteCheckpointService();
+    }
+
+    public static function quoteAddonService($getShared = true): \App\Application\QuoteAddons\QuoteAddonService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('quoteAddonService');
+        }
+        return new \App\Application\QuoteAddons\QuoteAddonService();
+    }
+
+    public static function paymentService($getShared = true): \App\Application\Payments\PaymentService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('paymentService');
+        }
+        return new \App\Application\Payments\PaymentService();
+    }
+
     /*
      * public static function example($getShared = true)
      * {

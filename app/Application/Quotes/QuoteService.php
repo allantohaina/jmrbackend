@@ -293,6 +293,12 @@ class QuoteService
         if (!$model->update($id, $updateData)) {
             return Result::fail($model->errors(), 400);
         }
+
+        // Auto-trigger tranche 1 (deposit) when devis is accepted
+        if ($status === 'accepted' && ($quote['status'] ?? '') !== 'accepted') {
+            $this->createTranche1((string)$id, $model);
+        }
+
         $updatedQuote = $model->getQuoteById($id);
         $client = (new UserModel())->where('email', $updatedQuote['email'] ?? '')->first();
         if ($client && $status) {
@@ -331,6 +337,10 @@ class QuoteService
         }
         $model = new QuoteModel();
         if (!$model->update($id, ['status' => 'accepted'])) return Result::fail($model->errors(), 400);
+
+        // Auto-trigger tranche 1 (deposit) when client confirms devis
+        $this->createTranche1((string)$id, $model);
+
         $notifications = new NotificationService();
         foreach ((new UserModel())->where('role', 'admin')->findAll() as $admin) {
             $notifications->create(
@@ -350,5 +360,39 @@ class QuoteService
     public function markAsRead(int|string $id): Result
     {
         return Result::ok(['message' => 'Notification marked read']);
+    }
+
+    private function createTranche1(string $quoteId, QuoteModel $model): void
+    {
+        $quote = $model->getQuoteById($quoteId);
+        if (!$quote) return;
+
+        $amount = (float)($quote['amount'] ?? 0);
+        if ($amount <= 0) return;
+
+        $depositAmount = round($amount * 0.5, 2);
+
+        $paymentModel = new \App\Models\PaymentModel();
+        $existing = $paymentModel->where('quote_id', $quoteId)
+            ->where('phase', 'deposit')
+            ->first();
+        if ($existing) return;
+
+        $paymentData = [
+            'quote_id' => $quoteId,
+            'phase' => 'deposit',
+            'amount' => $depositAmount,
+            'status' => 'submitted',
+        ];
+
+        if (!$paymentModel->insert($paymentData)) {
+            log_message('error', 'Failed to auto-create tranche 1 for quote ' . $quoteId . ': ' . json_encode($paymentModel->errors()));
+            return;
+        }
+
+        $model->update($quoteId, [
+            'deposit_amount' => $depositAmount,
+            'deposit_paid' => false,
+        ]);
     }
 }
