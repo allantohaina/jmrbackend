@@ -106,6 +106,7 @@ $routes->get('/', static function () {
     $routes->group('quote-drafts', ['filter' => 'auth'], function($routes) {
         $routes->get('/', 'QuoteDrafts::index');
         $routes->post('/', 'QuoteDrafts::save');
+        $routes->get('(:segment)', 'QuoteDrafts::show/$1');
         $routes->post('(:segment)/submit', 'QuoteDrafts::submit/$1');
         $routes->delete('(:segment)', 'QuoteDrafts::remove/$1');
     });
@@ -229,3 +230,7 @@ $routes->get('/', static function () {
     $routes->post('admin/reset-password', 'AdminReset::resetPassword');
     $routes->get('admin/users', 'AdminReset::listUsers');
 });
+
+    // Public file serving for uploaded reference files (images / PDF / CSV)
+    // Files are stored in writable/uploads and referenced by base_url('uploads/...').
+    $routes->get('uploads/(:any)', 'Uploads::serve/$1');

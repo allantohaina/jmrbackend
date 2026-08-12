@@ -74,6 +74,30 @@ class QuoteDrafts extends ResourceController
         }
     }
 
+    public function show($id = null): ResponseInterface
+    {
+        try {
+            $clientId = $this->request->user['id'] ?? null;
+            if (!$clientId) {
+                log_message('warning', 'QuoteDrafts show: Auth failed - no user ID in request');
+                return $this->failUnauthorized('Authentification requise.');
+            }
+
+            log_message('info', "QuoteDrafts show: draft_id={$id}, client_id={$clientId}");
+
+            $draft = (new QuoteDraftModel())->findForClient((string) $id, (string) $clientId);
+            if (!$draft) {
+                log_message('warning', "QuoteDrafts show: Draft not found id={$id} client_id={$clientId}");
+                return $this->failNotFound('Brouillon introuvable.');
+            }
+
+            return $this->respond($draft);
+        } catch (Throwable $e) {
+            log_message('error', "QuoteDrafts show error: {$e->getMessage()}\nClient ID: " . ($this->request->user['id'] ?? 'null') . "\nFile: {$e->getFile()}:{$e->getLine()}\nTrace: {$e->getTraceAsString()}");
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
     public function submit($id = null): ResponseInterface
     {
         try {
