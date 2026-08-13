@@ -58,10 +58,12 @@ class Filters extends BaseFilters
     public array $required = [
         'before' => [
             'forcehttps', // Force Global Secure Requests
+            'cors',
         ],
         'after' => [
             'performance', // Performance Metrics
             'toolbar',     // Debug Toolbar
+            'cors',
         ],
     ];
 
@@ -111,10 +113,6 @@ class Filters extends BaseFilters
     public array $filters = [
         'connectiontrace' => ['before' => ['api/*'], 'after' => ['api/*']],
         'firewall' => ['before' => ['api/*']],
-        'cors'     => [
-            'before' => ['api/*'],
-            'after'  => ['api/*'],
-        ],
         'ratelimit' => ['before' => ['api/users/register', 'api/users/login', 'api/users/refresh']],
     ];
 }
