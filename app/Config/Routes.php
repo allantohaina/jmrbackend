@@ -99,6 +99,7 @@ $routes->get('/', static function () {
             $routes->put('(:segment)/status', 'Quotes::updateStatus/$1');
             $routes->put('(:segment)', 'Quotes::update/$1');
             $routes->put('(:segment)/sign', 'Quotes::sign/$1');
+            $routes->delete('(:segment)', 'Quotes::remove/$1');
         });
     });
 

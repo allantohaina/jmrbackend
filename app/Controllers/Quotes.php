@@ -262,6 +262,42 @@ class Quotes extends ResourceController
         }
     }
 
+    public function remove($id = null): ResponseInterface
+    {
+        try {
+            $actor = $this->request->user ?? [];
+            $quoteModel = new \App\Models\QuoteModel();
+            $quote = $quoteModel->getQuoteById((string)$id);
+            if (!$quote) {
+                return $this->failNotFound('Devis introuvable.');
+            }
+
+            $isAdmin = ($actor['role'] ?? null) === 'admin';
+            $isOwner = !empty($quote['client_id']) && (string)$quote['client_id'] === (string)($actor['id'] ?? '');
+            if (!$isOwner) {
+                $isOwner = !empty($quote['email'])
+                    && !empty($actor['email'])
+                    && strtolower((string)$quote['email']) === strtolower((string)$actor['email']);
+            }
+            if (!$isAdmin && !$isOwner) {
+                return $this->failForbidden('Vous ne pouvez pas supprimer ce devis.');
+            }
+
+            // Seul un brouillon non envoyé peut être supprimé (ou un admin).
+            if (!$isAdmin && ($quote['status'] ?? '') !== 'draft') {
+                return $this->failForbidden('Seul un brouillon peut être supprimé.');
+            }
+
+            // Un brouillon non envoyé peut être supprimé par son propriétaire.
+            $quoteModel->delete($id);
+
+            return $this->respondDeleted(['message' => 'Devis supprimé.']);
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes remove error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
     private function getInputData(): array
     {
         // If multipart/form-data, read from getPost() directly
