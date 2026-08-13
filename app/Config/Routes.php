@@ -103,15 +103,6 @@ $routes->get('/', static function () {
         });
     });
 
-    // Quote drafts (unsent devis, per client)
-    $routes->group('quote-drafts', ['filter' => 'auth'], function($routes) {
-        $routes->get('/', 'QuoteDrafts::index');
-        $routes->post('/', 'QuoteDrafts::save');
-        $routes->get('(:segment)', 'QuoteDrafts::show/$1');
-        $routes->post('(:segment)/submit', 'QuoteDrafts::submit/$1');
-        $routes->delete('(:segment)', 'QuoteDrafts::remove/$1');
-    });
-
     // Quote Checkpoints
     $routes->group('quote-checkpoints', ['filter' => 'auth'], function($routes) {
         $routes->get('/', 'QuoteCheckpoints::index');
