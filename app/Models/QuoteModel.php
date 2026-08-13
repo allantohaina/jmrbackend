@@ -13,6 +13,8 @@ class QuoteModel extends Model
     protected $useSoftDeletes = true;
     protected $protectFields = true;
     protected $allowedFields = [
+        'titre',
+        'progression',
         'name',
         'email',
         'phone',

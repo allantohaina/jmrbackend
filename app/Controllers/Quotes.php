@@ -120,8 +120,9 @@ class Quotes extends ResourceController
                 return $this->failForbidden('Vous ne pouvez pas modifier ce devis.');
             }
 
-            // A client peut uniquement envoyer / accepter / refuser son propre devis
-            if (!$isAdmin && $isOwner && $status && !in_array($status, ['pending', 'accepted', 'rejected'], true)) {
+            // A client peut uniquement envoyer / accepter / refuser son propre devis,
+            // ou enregistrer / mettre à jour un brouillon (status 'draft').
+            if (!$isAdmin && $isOwner && $status && !in_array($status, ['pending', 'accepted', 'rejected', 'draft'], true)) {
                 return $this->failForbidden('Transition de statut non autorisée pour ce devis.');
             }
 

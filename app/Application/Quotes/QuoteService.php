@@ -78,6 +78,44 @@ class QuoteService
         return $data;
     }
 
+    private const DRAFT_PROGRESSION_FIELDS = ['category', 'tissu', 'quantite', 'delai_souhaite', 'name', 'email', 'message'];
+
+    private const CATEGORY_LABELS = [
+        'pantalon' => 'Pantalon', 'jupe' => 'Jupe', 'shirt' => 'T-shirt / Débardeur',
+        'polo' => 'Polo', 'chemise' => 'Chemise / Chemisier', 'veste' => 'Veste / Blazer',
+        'manteau' => 'Manteau / Parka', 'robe' => 'Robe', 'sweat' => 'Sweat-shirt / Hoodie',
+        'short' => 'Short / Bermuda', 'pull' => 'Pull / Cardigan', 'sous-vetement' => 'Sous-vêtements / Lingerie',
+        'accessoire' => 'Accessoires', 'uniforme' => 'Uniforme / Workwear', 'sport' => 'Sportswear',
+        'enfant' => 'Enfant / Bébé', 'autre' => 'Autre projet sur-mesure',
+    ];
+
+    private function computeDraftMeta(array $data): array
+    {
+        $filled = 0;
+        foreach (self::DRAFT_PROGRESSION_FIELDS as $field) {
+            if (!empty(trim((string)($data[$field] ?? '')))) {
+                $filled++;
+            }
+        }
+        $progression = (int) round(($filled / count(self::DRAFT_PROGRESSION_FIELDS)) * 100);
+
+        $category = trim((string)($data['category'] ?? ''));
+        $tissu = trim((string)($data['tissu'] ?? ''));
+        $titre = '';
+        if ($category !== '') {
+            $titre = self::CATEGORY_LABELS[$category] ?? ucfirst($category);
+            if ($tissu !== '') {
+                $titre .= ' — ' . $tissu;
+            }
+        } elseif ($tissu !== '') {
+            $titre = $tissu;
+        } elseif (!empty(trim((string)($data['message'] ?? '')))) {
+            $titre = mb_substr(preg_replace('/\s+/', ' ', trim((string)$data['message'])), 0, 60);
+        }
+
+        return ['titre' => $titre, 'progression' => $progression];
+    }
+
     public function create(array $data, IncomingRequest $request): Result
     {
         $model = new QuoteModel();
@@ -104,7 +142,14 @@ class QuoteService
         $data = $this->hydrateWithProduitDefaults($data);
         $calc = $this->recalculateCotation($data);
 
+        $isDraft = (($data['status'] ?? '') === 'draft');
+        if ($isDraft) {
+            $model->skipValidation(true);
+        }
+
         $quoteData = [
+            'titre' => null,
+            'progression' => 0,
             'name' => $data['name'] ?? null,
             'email' => $data['email'] ?? null,
             'phone' => $data['phone'] ?? null,
@@ -145,6 +190,12 @@ class QuoteService
             'files' => !empty($uploadedFiles) ? json_encode($uploadedFiles) : ($data['files'] ?? null),
         ];
 
+        if ($isDraft) {
+            $meta = $this->computeDraftMeta($data);
+            $quoteData['titre'] = $meta['titre'];
+            $quoteData['progression'] = $meta['progression'];
+        }
+
         if (!$model->save($quoteData)) {
             return Result::fail($model->errors(), 400);
         }
@@ -158,14 +209,17 @@ class QuoteService
         }
 
         $quote = $model->getQuoteById($quoteId);
-        $admins = (new UserModel())->where('role', 'admin')->findAll();
-        $notifications = new NotificationService();
-        foreach ($admins as $admin) {
-            $notifications->create(
-                $admin['id'], 'quote.requested', 'Nouvelle demande de devis',
-                sprintf('%s a envoyé une demande de devis.', $quote['name'] ?? 'Un client'),
-                'quote', $quoteId, '/backoffice/devis', null, 'info'
-            );
+
+        if (!$isDraft) {
+            $admins = (new UserModel())->where('role', 'admin')->findAll();
+            $notifications = new NotificationService();
+            foreach ($admins as $admin) {
+                $notifications->create(
+                    $admin['id'], 'quote.requested', 'Nouvelle demande de devis',
+                    sprintf('%s a envoyé une demande de devis.', $quote['name'] ?? 'Un client'),
+                    'quote', $quoteId, '/backoffice/devis', null, 'info'
+                );
+            }
         }
         return Result::created($quote);
     }
@@ -281,6 +335,26 @@ class QuoteService
             $days = (int)($additionalData['confirmation_days'] ?? $quote['confirmation_days'] ?? 7);
             $updateData['confirmation_days'] = $days;
             $updateData['confirmation_deadline'] = date('Y-m-d H:i:s', time() + ($days * 86400));
+        }
+
+        // Un brouillon (status 'draft') est édité par son propriétaire : tous les
+        // champs du formulaire sont sauvegardés, et la validation stricte est ignorée.
+        $isDraft = ($status === 'draft');
+        if ($isDraft) {
+            $model->skipValidation(true);
+            $meta = $this->computeDraftMeta($additionalData);
+            $updateData['titre'] = $meta['titre'];
+            $updateData['progression'] = $meta['progression'];
+            $draftFields = [
+                'name', 'email', 'phone', 'message', 'category', 'tissu', 'coupe',
+                'gabarit', 'style', 'grammage', 'tailles', 'quantite', 'finitions',
+                'delai_souhaite', 'request_type', 'modify_code',
+            ];
+            foreach ($draftFields as $key) {
+                if (array_key_exists($key, $additionalData)) {
+                    $updateData[$key] = $additionalData[$key];
+                }
+            }
         }
 
         foreach ($additionalData as $key => $value) {
