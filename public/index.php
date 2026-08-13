@@ -5,6 +5,32 @@ use Config\Paths;
 
 /*
  *---------------------------------------------------------------
+ * CORS — appliqué en amont du framework
+ *---------------------------------------------------------------
+ * Couvre toutes les réponses (y compris 404 / erreurs / OPTIONS),
+ * indépendamment des filtres ou du cache OPcache.
+ */
+$corsAllowedOrigins = [
+    'https://jmrtextile.com',
+    'https://www.jmrtextile.com',
+    'https://api.jmrtextile.com',
+];
+$corsOrigin = isset($_SERVER['HTTP_ORIGIN']) ? (string) $_SERVER['HTTP_ORIGIN'] : '';
+if (in_array($corsOrigin, $corsAllowedOrigins, true)) {
+    header('Access-Control-Allow-Origin: ' . $corsOrigin);
+    header('Vary: Origin');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Max-Age: 7200');
+
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+        header('HTTP/1.1 204 No Content');
+        exit(0);
+    }
+}
+
+/*
+ *---------------------------------------------------------------
  * CHECK PHP VERSION
  *---------------------------------------------------------------
  */
