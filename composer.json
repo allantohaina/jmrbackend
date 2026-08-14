@@ -15,7 +15,6 @@
         "league/mime-type-detection": "^1.16",
         "minishlink/web-push": "^11.0",
         "php-http/guzzle7-adapter": "^1.1",
-        "rafaelwendel/ci4formbuilder": "^0.0.4",
         "stymiee/email-validator": "^2.1"
     },
     "require-dev": {

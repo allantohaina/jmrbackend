@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ef5ed6a391c9676b50035a9b6ef2f956",
+    "content-hash": "cbca3a97ec40c8e3a1e386d04021fc79",
     "packages": [
         {
             "name": "brick/math",
@@ -1173,56 +1173,6 @@
                 "source": "https://github.com/php-fig/log/tree/3.0.2"
             },
             "time": "2024-09-11T13:17:53+00:00"
-        },
-        {
-            "name": "rafaelwendel/ci4formbuilder",
-            "version": "0.0.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/rafaelwendel/CI4FormBuilder.git",
-                "reference": "543bf799ae9cdc5b4fd24aa949bba73352aef656"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/rafaelwendel/CI4FormBuilder/zipball/543bf799ae9cdc5b4fd24aa949bba73352aef656",
-                "reference": "543bf799ae9cdc5b4fd24aa949bba73352aef656",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^7.4 || ^8.0"
-            },
-            "require-dev": {
-                "codeigniter4/framework": "^4.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "CI4FormBuilder\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Rafael Wendel Pinheiro",
-                    "email": "rafaelwendel@hotmail.com"
-                }
-            ],
-            "description": "Library to build and manage forms in a CodeIgniter 4 projects (Object-Oriented way).",
-            "homepage": "https://github.com/rafaelwendel/CI4FormBuilder",
-            "keywords": [
-                "builder",
-                "codeigniter4",
-                "form",
-                "php"
-            ],
-            "support": {
-                "issues": "https://github.com/rafaelwendel/CI4FormBuilder/issues",
-                "source": "https://github.com/rafaelwendel/CI4FormBuilder/tree/0.0.4"
-            },
-            "time": "2026-05-01T20:10:54+00:00"
         },
         {
             "name": "ralouphie/getallheaders",
