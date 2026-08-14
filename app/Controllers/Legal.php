@@ -13,36 +13,6 @@ class Legal extends ResourceController
 
     private ?LegalService $legalService = null;
 
-    public function privacy()
-    {
-        return $this->respondResult($this->legalService()->getDoc('privacy'));
-    }
-
-    public function terms()
-    {
-        return $this->respondResult($this->legalService()->getDoc('terms'));
-    }
-
-    public function cookies()
-    {
-        return $this->respondResult($this->legalService()->getDoc('cookies'));
-    }
-
-    public function disclaimer()
-    {
-        return $this->respondResult($this->legalService()->getDoc('disclaimer'));
-    }
-
-    public function accessibility()
-    {
-        return $this->respondResult($this->legalService()->getDoc('accessibility'));
-    }
-
-    public function legalNotice()
-    {
-        return $this->respondResult($this->legalService()->getDoc('legal-notice'));
-    }
-
     public function consent()
     {
         try {

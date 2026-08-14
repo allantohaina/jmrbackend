@@ -10,18 +10,6 @@ use Throwable;
 
 class LegalService
 {
-    public function getDoc(string $name): Result
-    {
-        $path = APPPATH . 'Legal' . DIRECTORY_SEPARATOR . $name . '.md';
-        $content = is_file($path) ? file_get_contents($path) : '';
-
-        return Result::ok([
-            'name' => $name,
-            'version' => getenv('LEGAL_DOC_VERSION') ?: '1.0.0',
-            'content' => $content,
-        ]);
-    }
-
     public function recordConsent(array $input, IncomingRequest $request): Result
     {
         try {
