@@ -13,6 +13,8 @@
         "php": "^8.2",
         "codeigniter4/framework": "^4.7",
         "league/mime-type-detection": "^1.16",
+        "minishlink/web-push": "^11.0",
+        "php-http/guzzle7-adapter": "^1.1",
         "rafaelwendel/ci4formbuilder": "^0.0.4",
         "stymiee/email-validator": "^2.1"
     },
@@ -38,7 +40,10 @@
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
     },
     "scripts": {
         "test": "phpunit"

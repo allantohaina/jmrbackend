@@ -224,6 +224,66 @@ class Quotes extends ResourceController
         }
     }
 
+    public function notify($id = null): ResponseInterface
+    {
+        try {
+            $actor = $this->request->user ?? [];
+            if (($actor['role'] ?? null) !== 'admin') {
+                return $this->failForbidden('Seul un administrateur peut envoyer une notification au client.');
+            }
+
+            $quoteModel = new \App\Models\QuoteModel();
+            $quote = $quoteModel->getQuoteById((string)$id);
+            if (!$quote) {
+                return $this->failNotFound('Devis introuvable.');
+            }
+
+            $input = $this->getInputData();
+            $type = (string)($input['type'] ?? '');
+
+            $labels = [
+                'delay' => ['Retard de production', 'Votre commande accuse un retard de production. Notre équipe vous informe dès que possible.', 'warning'],
+                'error' => ['Erreur de conception / technique', 'Une erreur a été détectée sur votre commande. Nous vous contactons rapidement pour la résoudre.', 'error'],
+                'ready' => ['Prêt pour livraison', 'Votre commande est prête pour la livraison. Vous pouvez en suivre l\'avancement dans votre espace client.', 'success'],
+                'info' => ['Besoin d\'informations complémentaires', 'Nous avons besoin d\'informations complémentaires pour finaliser votre commande.', 'info'],
+            ];
+
+            if (!isset($labels[$type])) {
+                return $this->failValidationErrors(['type' => 'Type d\'alerte invalide.']);
+            }
+
+            $userModel = new \App\Models\UserModel();
+            $client = null;
+            if (!empty($quote['client_id'])) {
+                $client = $userModel->find($quote['client_id']);
+            }
+            if (!$client && !empty($quote['email'])) {
+                $client = $userModel->where('email', $quote['email'])->first();
+            }
+            if (!$client) {
+                return $this->failNotFound('Aucun compte client associé à ce devis.');
+            }
+
+            [$title, $message, $notificationType] = $labels[$type];
+            (new \App\Application\Notifications\NotificationService())->create(
+                $client['id'],
+                'quote.' . $type,
+                $title,
+                $message,
+                'quote',
+                (string)$id,
+                '/mon-profil',
+                $actor['id'] ?? null,
+                $notificationType,
+            );
+
+            return $this->respondCreated(['message' => 'Notification envoyée au client.']);
+        } catch (Throwable $e) {
+            log_message('error', 'Quotes notify error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
     public function sign($id = null): ResponseInterface
     {
         try {

@@ -25,5 +25,12 @@ class NotificationService
             // Business operations remain available while a migration is pending.
             log_message('error', 'Notification could not be created: ' . $e->getMessage());
         }
+
+        try {
+            (new PushService())->sendToUser($recipientId, $title, $message, $actionUrl);
+        } catch (Throwable $e) {
+            // Push failures must never break the business operation.
+            log_message('error', 'Push notification could not be sent: ' . $e->getMessage());
+        }
     }
 }

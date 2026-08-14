@@ -56,7 +56,7 @@ class QuoteCheckpoints extends ResourceController
         }
     }
 
-    public function validate($id = null): ResponseInterface
+    public function validateCheckpoint($id = null): ResponseInterface
     {
         try {
             $actor = $this->request->user ?? [];

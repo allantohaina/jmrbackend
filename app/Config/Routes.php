@@ -92,6 +92,7 @@ $routes->get('/', static function () {
         $routes->group('', ['filter' => 'auth'], function($routes) {
             $routes->get('notifications', 'Quotes::notifications');
             $routes->put('notifications/(:segment)/read', 'Quotes::markNotificationRead/$1');
+            $routes->post('(:segment)/notify', 'Quotes::notify/$1');
             $routes->post('(:segment)/confirm', 'Quotes::confirm/$1');
             $routes->post('(:segment)/convert-to-commande', 'Quotes::convertToCommande/$1');
             $routes->get('/', 'Quotes::index');
@@ -108,7 +109,7 @@ $routes->get('/', static function () {
         $routes->get('/', 'QuoteCheckpoints::index');
         $routes->get('(:segment)', 'QuoteCheckpoints::show/$1');
         $routes->post('/', 'QuoteCheckpoints::create');
-        $routes->put('(:segment)/validate', 'QuoteCheckpoints::validate/$1');
+        $routes->put('(:segment)/validate', 'QuoteCheckpoints::validateCheckpoint/$1');
         $routes->delete('(:segment)', 'QuoteCheckpoints::delete/$1');
     });
 
@@ -132,6 +133,13 @@ $routes->get('/', static function () {
         $routes->get('/', 'Notifications::index');
         $routes->put('read-all', 'Notifications::markAllRead');
         $routes->put('(:segment)/read', 'Notifications::markRead/$1');
+    });
+
+    $routes->group('push-subscriptions', ['filter' => 'auth'], function($routes) {
+        $routes->get('/', 'PushSubscriptions::index');
+        $routes->post('/', 'PushSubscriptions::create');
+        $routes->post('test', 'PushSubscriptions::test');
+        $routes->delete('(:segment)', 'PushSubscriptions::remove/$1');
     });
 
     $routes->group('admin', ['filter' => 'admin'], function($routes) {
