@@ -39,6 +39,7 @@ class Cors extends BaseConfig
             'https://www.jmrtextile.com',
             'https://api.jmrtextile.com',
             'https://admin.jmrtextile.com',
+            'https://worker.jmrtextile.com',
         ],
 
         /**
