@@ -355,7 +355,7 @@ class QuoteService
         $counts = [
             'draft' => 0, 'needs_info' => 0, 'sent' => 0, 'accepted' => 0, 'rejected' => 0, 'expired' => 0, 'pending' => 0,
         ];
-        $all = $model->select('status')->findAll();
+        $all = $model->select('status')->where('status !=', 'draft')->findAll();
         foreach ($all as $q) {
             $s = (string)($q['status'] ?? 'pending');
             if (!isset($counts[$s])) $counts[$s] = 0;
