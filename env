@@ -17,6 +17,18 @@
 CI_ENVIRONMENT = production
 
 #--------------------------------------------------------------------
+# JWT (AUTH) — obligatoire : l'API refuse de démarrer sans ces clés
+#--------------------------------------------------------------------
+# JWT_SECRET_KEY = <générez une clé aléatoire (ex: php -r "echo bin2hex(random_bytes(32));")>
+# JWT_ISSUER = jmr-textile
+# JWT_AUDIENCE = jmr-textile-client
+
+#--------------------------------------------------------------------
+# ADMIN RESET (outil de secours) — obligatoire
+#--------------------------------------------------------------------
+# ADMIN_RESET_SECRET = <générez une clé aléatoire>
+
+#--------------------------------------------------------------------
 # APP
 #--------------------------------------------------------------------
 

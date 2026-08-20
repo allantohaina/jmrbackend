@@ -37,7 +37,7 @@ class ProduitService
             return Result::fail(['error' => 'Le nom du produit est requis.'], 422);
         }
         if (!$this->model->insert($data)) {
-            return Result::fail(['error' => 'Erreur lors de la création du produit.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur lors de la création du produit.', 'messages' => $this->model->errors()], 422);
         }
         $id = $this->model->getInsertID();
         return Result::created(['data' => $this->model->findWithDecoded($id)]);
@@ -49,7 +49,7 @@ class ProduitService
         if (!$existing) return Result::notFound('Produit introuvable.');
         if (isset($data['id'])) unset($data['id']);
         if (!$this->model->update($id, $data)) {
-            return Result::fail(['error' => 'Erreur lors de la mise à jour du produit.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur lors de la mise à jour du produit.', 'messages' => $this->model->errors()], 422);
         }
         return Result::ok(['data' => $this->model->findWithDecoded($id)]);
     }

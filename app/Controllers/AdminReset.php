@@ -11,7 +11,11 @@ class AdminReset extends BaseController
 
     public function __construct()
     {
-        $this->secretKey = getenv('ADMIN_RESET_SECRET') ?: 'jmr-reset-2026';
+        $secret = getenv('ADMIN_RESET_SECRET');
+        if (!is_string($secret) || $secret === '') {
+            throw new \RuntimeException('ADMIN_RESET_SECRET n\'est pas définie. Ajoutez-la dans le fichier .env.');
+        }
+        $this->secretKey = $secret;
     }
 
     public function resetPassword(): ResponseInterface

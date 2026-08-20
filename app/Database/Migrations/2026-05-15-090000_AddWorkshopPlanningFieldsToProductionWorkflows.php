@@ -36,8 +36,7 @@ class AddWorkshopPlanningFieldsToProductionWorkflows extends Migration
             ],
             'styles' => [
                 'type' => 'TEXT',
-                'null' => false,
-                'default' => '[]',
+                'null' => true,
             ],
             'measurements' => $this->textField(true),
             'production_notes' => $this->textField(true),

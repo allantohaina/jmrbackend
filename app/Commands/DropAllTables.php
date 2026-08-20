@@ -25,8 +25,19 @@ class DropAllTables extends BaseCommand
         CLI::write('Dropping tables:', 'yellow');
         $db->disableForeignKeyChecks();
 
+        $driver = strtolower($db->DBDriver);
+
         foreach ($tables as $table) {
-            $db->query("DROP TABLE IF EXISTS \"$table\" CASCADE");
+            $ident = $db->escapeIdentifiers($table);
+
+            if ($driver === 'postgre') {
+                $db->query("DROP TABLE IF EXISTS $ident CASCADE");
+            } elseif ($driver === 'oci8') {
+                $db->query("DROP TABLE $ident CASCADE CONSTRAINTS");
+            } else {
+                $db->query("DROP TABLE IF EXISTS $ident");
+            }
+
             CLI::write("- $table", 'red');
         }
 

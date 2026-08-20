@@ -33,7 +33,7 @@ class QuoteCheckpointService
             return Result::fail(['error' => 'quote_id et title sont requis.'], 422);
         }
         if (!$this->model->insert($data)) {
-            return Result::fail(['error' => 'Erreur lors de la création.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur lors de la création.', 'messages' => $this->model->errors()], 422);
         }
         $id = $this->model->getInsertID();
         return Result::created(['data' => $this->model->find($id)]);

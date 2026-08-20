@@ -18,6 +18,14 @@ $routes->get('/', static function () {
 
         $routes->get('exchange-rates', 'ExchangeRate::index');
 
+        // Suivi de commande public + lien de paiement public
+        $routes->post('public/suivi-commande', 'PublicController::suiviCommande', ['filter' => 'ratelimit:auth']);
+        $routes->get('public/lien-paiement/(:any)', 'PublicController::lienInfo/$1');
+        $routes->post('public/lien-paiement/(:any)/payer', 'PublicController::lienPayer/$1', ['filter' => 'ratelimit:auth']);
+
+        // Avis publics (liste approuvés)
+        $routes->get('produits/(:segment)/avis', 'Avis::publicList/$1');
+
         $routes->post('users/register', 'Users::register', ['filter' => 'ratelimit:auth']);
         $routes->post('users/login', 'Users::login', ['filter' => 'ratelimit:login']);
         $routes->post('users/refresh', 'Users::refresh', ['filter' => 'ratelimit:auth']);
@@ -47,7 +55,7 @@ $routes->get('/', static function () {
         });
     });
 
-    $routes->group('admin/history', ['filter' => 'admin'], function($routes) {
+    $routes->group('admin/history', ['filter' => ['auth', 'admin']], function($routes) {
         $routes->get('audit', 'History::audit');
         $routes->get('tokens', 'History::tokens');
         $routes->get('projects', 'History::projects');
@@ -59,7 +67,7 @@ $routes->get('/', static function () {
     });
 
     // Production Checklists
-    $routes->group('checklists', ['filter' => 'auth'], function($routes) {
+    $routes->group('checklists', ['filter' => ['auth', 'staff']], function($routes) {
         $routes->post('/', 'Checklists::create');
         $routes->post('initialize', 'Checklists::initialize');
         $routes->post('initialize-command', 'Checklists::initializeCommand');
@@ -71,9 +79,10 @@ $routes->get('/', static function () {
     });
 
     // Production Workflows
-    $routes->group('workflows', ['filter' => 'auth'], function($routes) {
+    $routes->group('workflows', ['filter' => ['auth', 'staff']], function($routes) {
         $routes->get('/', 'ProductionWorkflows::index');
         $routes->post('/', 'ProductionWorkflows::create');
+        $routes->get('kanban', 'ProductionWorkflows::kanban');
         $routes->get('(:segment)', 'ProductionWorkflows::show/$1');
         $routes->put('(:segment)', 'ProductionWorkflows::update/$1');
         $routes->post('(:segment)/transition', 'ProductionWorkflows::transition/$1');
@@ -99,7 +108,7 @@ $routes->get('/', static function () {
     });
 
     // Quote Checkpoints
-    $routes->group('quote-checkpoints', ['filter' => 'auth'], function($routes) {
+    $routes->group('quote-checkpoints', ['filter' => ['auth', 'staff']], function($routes) {
         $routes->get('/', 'QuoteCheckpoints::index');
         $routes->get('(:segment)', 'QuoteCheckpoints::show/$1');
         $routes->post('/', 'QuoteCheckpoints::create');
@@ -108,7 +117,7 @@ $routes->get('/', static function () {
     });
 
     // Quote Addons
-    $routes->group('quote-addons', ['filter' => 'auth'], function($routes) {
+    $routes->group('quote-addons', ['filter' => ['auth', 'staff']], function($routes) {
         $routes->get('/', 'QuoteAddons::index');
         $routes->get('(:segment)', 'QuoteAddons::show/$1');
         $routes->post('/', 'QuoteAddons::create');
@@ -123,6 +132,8 @@ $routes->get('/', static function () {
         $routes->put('(:segment)/status', 'PaymentsController::updateStatus/$1');
     });
 
+    $routes->post('quotes/(:segment)/payments', 'PaymentsController::submitForQuote/$1', ['filter' => 'auth']);
+
     $routes->group('notifications', ['filter' => 'auth'], function($routes) {
         $routes->get('/', 'Notifications::index');
         $routes->put('read-all', 'Notifications::markAllRead');
@@ -136,7 +147,7 @@ $routes->get('/', static function () {
         $routes->delete('(:segment)', 'PushSubscriptions::remove/$1');
     });
 
-    $routes->group('admin', ['filter' => 'admin'], function($routes) {
+    $routes->group('admin', ['filter' => ['auth', 'admin']], function($routes) {
         $routes->get('bans', 'Bans::index');
         $routes->get('bans/(:segment)', 'Bans::show/$1');
         $routes->get('bans/user/(:segment)', 'Bans::userBans/$1');
@@ -152,10 +163,10 @@ $routes->get('/', static function () {
 
     // Site content (public read, admin write)
     $routes->get('content', 'Content::index');
-    $routes->put('content/(:any)', 'Content::update/$1', ['filter' => 'auth']);
+    $routes->put('content/(:any)', 'Content::update/$1', ['filter' => ['auth', 'admin']]);
 
     // Production Assemblages
-    $routes->group('assemblages', ['filter' => 'auth'], function($routes) {
+    $routes->group('assemblages', ['filter' => ['auth', 'staff']], function($routes) {
         $routes->get('/', 'Assemblages::index');
         $routes->get('(:segment)', 'Assemblages::show/$1');
         $routes->post('/', 'Assemblages::create');
@@ -167,14 +178,18 @@ $routes->get('/', static function () {
     $routes->group('commandes', ['filter' => 'auth'], function($routes) {
         $routes->get('/', 'Commandes::index');
         $routes->get('(:segment)', 'Commandes::show/$1');
-        $routes->post('/', 'Commandes::create');
-        $routes->put('(:segment)', 'Commandes::update/$1');
-        $routes->delete('(:segment)', 'Commandes::delete/$1');
-        $routes->put('(:segment)/sign', 'Commandes::sign/$1');
+        $routes->post('/', 'Commandes::create', ['filter' => 'staff']);
+        $routes->put('(:segment)', 'Commandes::update/$1', ['filter' => 'staff']);
+        $routes->delete('(:segment)', 'Commandes::delete/$1', ['filter' => 'staff']);
+        $routes->put('(:segment)/sign', 'Commandes::sign/$1', ['filter' => 'staff']);
+        $routes->get('(:segment)/recu', 'CommandesExtras::recuData/$1', ['filter' => 'staff']);
+        $routes->get('(:segment)/recu.pdf', 'CommandesExtras::recuPdf/$1', ['filter' => 'staff']);
+        $routes->post('(:segment)/lien-paiement', 'CommandesExtras::lienPaiement/$1', ['filter' => 'staff']);
+        $routes->get('(:segment)/qr-data', 'CommandesExtras::qrData/$1', ['filter' => 'staff']);
     });
 
     // Achats (Purchases)
-    $routes->group('achats', ['filter' => 'auth'], function($routes) {
+    $routes->group('achats', ['filter' => ['auth', 'staff']], function($routes) {
         $routes->get('/', 'Achats::index');
         $routes->get('(:segment)', 'Achats::show/$1');
         $routes->post('/', 'Achats::create');
@@ -183,7 +198,7 @@ $routes->get('/', static function () {
     });
 
     // Bons de livraison (Delivery Notes)
-    $routes->group('bon-livraison', ['filter' => 'auth'], function($routes) {
+    $routes->group('bon-livraison', ['filter' => ['auth', 'staff']], function($routes) {
         $routes->get('/', 'BonLivraison::index');
         $routes->get('(:segment)', 'BonLivraison::show/$1');
         $routes->post('/', 'BonLivraison::create');
@@ -197,10 +212,41 @@ $routes->get('/', static function () {
         $routes->get('/', 'Produits::index');
         $routes->get('categories', 'Produits::categories');
         $routes->get('(:segment)', 'Produits::show/$1');
-        $routes->post('/', 'Produits::create');
-        $routes->put('(:segment)', 'Produits::update/$1');
-        $routes->delete('(:segment)', 'Produits::delete/$1');
+        $routes->post('/', 'Produits::create', ['filter' => 'staff']);
+        $routes->put('(:segment)', 'Produits::update/$1', ['filter' => 'staff']);
+        $routes->delete('(:segment)', 'Produits::delete/$1', ['filter' => 'staff']);
+        $routes->post('(:segment)/avis', 'Avis::submit/$1');
     });
+
+    // Matières premières + stock
+    $routes->group('matieres', ['filter' => ['auth', 'staff']], function($routes) {
+        $routes->get('/', 'Matieres::index');
+        $routes->get('alertes', 'Matieres::alertes');
+        $routes->post('/', 'Matieres::create');
+        $routes->post('mouvements', 'Matieres::mouvement');
+        $routes->get('(:segment)', 'Matieres::show/$1');
+        $routes->put('(:segment)', 'Matieres::update/$1');
+        $routes->delete('(:segment)', 'Matieres::delete/$1');
+    });
+
+    // Avis clients (modération)
+    $routes->group('avis', ['filter' => ['auth', 'staff']], function($routes) {
+        $routes->get('/', 'Avis::index');
+        $routes->put('(:segment)/statut', 'Avis::updateStatut/$1', ['filter' => 'admin']);
+    });
+
+    // Statistiques (admin)
+    $routes->get('stats/dashboard', 'Stats::dashboard', ['filter' => ['auth', 'admin']]);
+
+    // Exports CSV (staff)
+    $routes->group('exports', ['filter' => ['auth', 'staff']], function($routes) {
+        $routes->get('devis', 'Exports::devis');
+        $routes->get('commandes', 'Exports::commandes');
+        $routes->get('paiements', 'Exports::paiements');
+    });
+
+    // Points fidélité (client)
+    $routes->get('moi/points', 'Points::mine', ['filter' => 'auth']);
 
     // Demandes client
     $routes->group('demandes-client', ['filter' => 'auth'], function($routes) {
@@ -208,8 +254,8 @@ $routes->get('/', static function () {
         $routes->get('pending-count', 'DemandesClient::pendingCount');
         $routes->get('(:segment)', 'DemandesClient::show/$1');
         $routes->post('/', 'DemandesClient::create');
-        $routes->put('(:segment)', 'DemandesClient::update/$1');
-        $routes->put('(:segment)/refuse', 'DemandesClient::refuse/$1');
+        $routes->put('(:segment)', 'DemandesClient::update/$1', ['filter' => 'staff']);
+        $routes->put('(:segment)/refuse', 'DemandesClient::refuse/$1', ['filter' => 'staff']);
     });
 
     // Attachments (pièces jointes)
@@ -220,9 +266,9 @@ $routes->get('/', static function () {
         $routes->delete('(:segment)', 'Attachments::delete/$1');
     });
 
-    // Admin reset (protected by secret key, not auth)
-    $routes->post('admin/reset-password', 'AdminReset::resetPassword');
-    $routes->get('admin/users', 'AdminReset::listUsers');
+    // Admin reset (protected by secret key + ratelimit, not auth)
+    $routes->post('admin/reset-password', 'AdminReset::resetPassword', ['filter' => 'ratelimit:auth']);
+    $routes->get('admin/users', 'AdminReset::listUsers', ['filter' => 'ratelimit:auth']);
 });
 
     // Public file serving for uploaded reference files (images / PDF / CSV)

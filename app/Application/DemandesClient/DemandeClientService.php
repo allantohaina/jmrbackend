@@ -52,7 +52,7 @@ class DemandeClientService
             return Result::fail(['error' => 'La description du besoin est requise.'], 422);
         }
         if (!$this->model->insert($data)) {
-            return Result::fail(['error' => 'Erreur lors de la création.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur lors de la création.', 'messages' => $this->model->errors()], 422);
         }
         $id = $this->model->getInsertID();
         return Result::created(['data' => $this->model->find($id)]);
@@ -66,7 +66,7 @@ class DemandeClientService
         if (isset($data['statut']) && $data['statut'] === 'Refusée') {
         }
         if (!$this->model->update($id, $data)) {
-            return Result::fail(['error' => 'Erreur mise à jour.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur mise à jour.', 'messages' => $this->model->errors()], 422);
         }
         return Result::ok(['data' => $this->model->find($id)]);
     }

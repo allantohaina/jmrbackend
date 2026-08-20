@@ -43,7 +43,7 @@ class AttachmentService
             return Result::fail(['error' => 'Champs fichier manquants.'], 422);
         }
         if (!$this->model->insert($data)) {
-            return Result::fail(['error' => 'Erreur création pièce jointe.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur création pièce jointe.', 'messages' => $this->model->errors()], 422);
         }
         $id = $this->model->getInsertID();
         return Result::created(['data' => $this->model->find($id)]);

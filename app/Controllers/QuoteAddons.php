@@ -23,7 +23,7 @@ class QuoteAddons extends ResourceController
     {
         try {
             $quoteId = $this->request->getGet('quote_id');
-            if (!$quoteId) return $this->failValidation('quote_id requis.');
+            if (!$quoteId) return $this->failValidationErrors(['error' => 'quote_id requis.']);
             $result = $this->svc()->listByQuote((string)$quoteId);
             return $this->respond($result->getPayload(), $result->getStatus());
         } catch (\Throwable $e) {
@@ -65,7 +65,7 @@ class QuoteAddons extends ResourceController
             $data = $this->request->getJSON(true) ?? [];
             $status = $data['status'] ?? null;
             $price = isset($data['price']) ? (float)$data['price'] : null;
-            if (!$status) return $this->failValidation('status requis.');
+            if (!$status) return $this->failValidationErrors(['error' => 'status requis.']);
             $result = $this->svc()->updateStatus((string)$id, $status, $price);
             return $this->respond($result->getPayload(), $result->getStatus());
         } catch (\Throwable $e) {

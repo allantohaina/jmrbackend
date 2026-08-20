@@ -82,7 +82,7 @@ class ProduitModel extends Model
     public function listCategories(): array
     {
         $rows = $this->select('categorie')
-            ->where('categorie IS NOT NULL AND categorie <> ""')
+            ->where("categorie IS NOT NULL AND categorie <> ''")
             ->distinct()
             ->orderBy('categorie', 'ASC')
             ->findAll();

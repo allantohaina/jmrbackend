@@ -8,13 +8,20 @@ class AddConfirmationDeadlineToQuotes extends Migration
 {
     public function up()
     {
-        $this->db->query("ALTER TABLE quotes ADD COLUMN confirmation_deadline DATETIME NULL AFTER status");
-        $this->db->query("ALTER TABLE quotes ADD COLUMN confirmation_days INT DEFAULT 7 AFTER confirmation_deadline");
+        if (!$this->db->fieldExists('confirmation_deadline', 'quotes')) {
+            $this->forge->addColumn('quotes', [
+                'confirmation_deadline' => ['type' => 'TIMESTAMP', 'null' => true],
+            ]);
+        }
+        if (!$this->db->fieldExists('confirmation_days', 'quotes')) {
+            $this->forge->addColumn('quotes', [
+                'confirmation_days' => ['type' => 'INT', 'default' => 7],
+            ]);
+        }
     }
 
     public function down()
     {
-        $this->db->query("ALTER TABLE quotes DROP COLUMN confirmation_deadline");
-        $this->db->query("ALTER TABLE quotes DROP COLUMN confirmation_days");
+        $this->forge->dropColumn('quotes', ['confirmation_deadline', 'confirmation_days']);
     }
 }

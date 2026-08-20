@@ -151,7 +151,11 @@ class Users extends ResourceController
             }
 
             $mimeType = $file->getClientMimeType();
-            if ($mimeType !== 'text/csv' && !$file->getClientExtension() === 'csv') {
+            $extension = strtolower((string) $file->getClientExtension());
+            if ($file->getSize() > 2 * 1024 * 1024) {
+                return $this->fail(['error' => 'Fichier trop volumineux (maximum 2 Mo).'], 400);
+            }
+            if ($mimeType !== 'text/csv' && $mimeType !== 'application/csv' && $extension !== 'csv') {
                 return $this->fail(['error' => 'Format de fichier invalide. Utilisez un .csv'], 400);
             }
 

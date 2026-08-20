@@ -121,11 +121,6 @@ class AddCotationFieldsToQuotes extends Migration
 
         $existingFields = array_keys($this->db->getFieldNames('quotes'));
 
-        $dropKeys = ['fk_quotes_client_user', 'fk_quotes_produit'];
-        foreach ($dropKeys as $key) {
-            $this->forge->dropForeignKey('quotes', $key, true);
-        }
-
         $dropFields = [
             'client_id', 'produit_id', 'matiere_fournie_par',
             'conso_tissu_unitaire', 'taux_chute_pct', 'niveau_difficulte',

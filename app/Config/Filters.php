@@ -34,6 +34,7 @@ class Filters extends BaseFilters
         'performance'   => PerformanceMetrics::class,
         'auth'          => \App\Filters\AuthFilter::class,
         'admin'         => \App\Filters\AdminFilter::class,
+        'staff'         => \App\Filters\StaffFilter::class,
         'ratelimit'     => \App\Filters\RateLimitFilter::class,
         'firewall'      => \App\Filters\FirewallFilter::class,
         'connectiontrace' => \App\Filters\ConnectionTraceFilter::class,
@@ -109,6 +110,5 @@ class Filters extends BaseFilters
     public array $filters = [
         'connectiontrace' => ['before' => ['api/*'], 'after' => ['api/*']],
         'firewall' => ['before' => ['api/*']],
-        'ratelimit' => ['before' => ['api/users/register', 'api/users/login', 'api/users/refresh']],
     ];
 }

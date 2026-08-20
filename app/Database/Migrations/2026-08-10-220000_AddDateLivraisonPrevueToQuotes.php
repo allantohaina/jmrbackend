@@ -8,11 +8,15 @@ class AddDateLivraisonPrevueToQuotes extends Migration
 {
     public function up()
     {
-        $this->db->query("ALTER TABLE quotes ADD COLUMN date_livraison_prevue DATE NULL AFTER delai_souhaite");
+        if (!$this->db->fieldExists('date_livraison_prevue', 'quotes')) {
+            $this->forge->addColumn('quotes', [
+                'date_livraison_prevue' => ['type' => 'DATE', 'null' => true],
+            ]);
+        }
     }
 
     public function down()
     {
-        $this->db->query("ALTER TABLE quotes DROP COLUMN date_livraison_prevue");
+        $this->forge->dropColumn('quotes', 'date_livraison_prevue');
     }
 }

@@ -167,6 +167,9 @@ class ProductionWorkflowService
 
         switch ($action) {
             case 'complete_step':
+                if ($this->actorRole($actor) !== 'admin' && $this->actorRole($actor) !== 'worker') {
+                    return Result::forbidden(['error' => 'Accès réservé au personnel de production']);
+                }
                 if (!$stepId) {
                     return Result::fail(['error' => 'step_id requis'], 400);
                 }

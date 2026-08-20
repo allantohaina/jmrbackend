@@ -8,17 +8,30 @@ class AddDraftMetadataToQuotes extends Migration
 {
     public function up()
     {
-        $this->db->query("ALTER TABLE quotes ADD COLUMN titre VARCHAR(255) NULL AFTER id");
-        $this->db->query("ALTER TABLE quotes ADD COLUMN progression TINYINT UNSIGNED DEFAULT 0 COMMENT 'pourcentage 0-100' AFTER titre");
-        $this->db->query("CREATE INDEX idx_quotes_status ON quotes(status, deleted_at)");
-        $this->db->query("CREATE INDEX idx_quotes_updated ON quotes(updated_at)");
+        if (!$this->db->fieldExists('titre', 'quotes')) {
+            $this->forge->addColumn('quotes', [
+                'titre' => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true],
+            ]);
+        }
+        if (!$this->db->fieldExists('progression', 'quotes')) {
+            $this->forge->addColumn('quotes', [
+                'progression' => ['type' => 'SMALLINT', 'default' => 0],
+            ]);
+        }
+        $this->db->query('CREATE INDEX idx_quotes_status ON quotes(status, deleted_at)');
+        $this->db->query('CREATE INDEX idx_quotes_updated ON quotes(updated_at)');
     }
 
     public function down()
     {
-        $this->db->query("DROP INDEX idx_quotes_updated ON quotes");
-        $this->db->query("DROP INDEX idx_quotes_status ON quotes");
-        $this->db->query("ALTER TABLE quotes DROP COLUMN progression");
-        $this->db->query("ALTER TABLE quotes DROP COLUMN titre");
+        $driver = strtolower($this->db->DBDriver);
+        if (in_array($driver, ['mysqli', 'mysql'], true)) {
+            $this->db->query('DROP INDEX idx_quotes_updated ON quotes');
+            $this->db->query('DROP INDEX idx_quotes_status ON quotes');
+        } else {
+            $this->db->query('DROP INDEX idx_quotes_updated');
+            $this->db->query('DROP INDEX idx_quotes_status');
+        }
+        $this->forge->dropColumn('quotes', ['progression', 'titre']);
     }
 }

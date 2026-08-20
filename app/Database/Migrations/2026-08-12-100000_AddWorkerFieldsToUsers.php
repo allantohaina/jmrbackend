@@ -14,7 +14,7 @@ class AddWorkerFieldsToUsers extends Migration
             'position' => ['type' => 'VARCHAR', 'constraint' => '100', 'null' => true, 'after' => 'department'],
             'hire_date' => ['type' => 'DATE', 'null' => true, 'after' => 'position'],
             'cin' => ['type' => 'VARCHAR', 'constraint' => '50', 'null' => true, 'after' => 'hire_date'],
-            'documents' => ['type' => 'JSON', 'null' => true, 'after' => 'cin'],
+            'documents' => ['type' => 'TEXT', 'null' => true, 'after' => 'cin'],
         ]);
     }
 

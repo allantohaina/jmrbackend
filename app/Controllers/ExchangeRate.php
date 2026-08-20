@@ -2,10 +2,12 @@
 
 namespace App\Controllers;
 
+use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class ExchangeRate extends BaseController
 {
+    use ResponseTrait;
     private float $cacheTTL = 3600;
     private string $cacheFile = WRITEPATH . 'cache/exchange_rates.json';
 
@@ -21,8 +23,10 @@ class ExchangeRate extends BaseController
         $symbols  = $this->request->getGet('symbols') ?: 'MGA,EUR';
 
         try {
-            $response = $client->get("https://api.frankfurter.dev/v2/latest?base={$base}&symbols={$symbols}", [
+            $response = $client->get("https://api.frankfurter.dev/v1/latest?base={$base}&symbols={$symbols}", [
                 'timeout' => 10,
+                'follow_redirects' => true,
+                'max_redirects' => 5,
             ]);
 
             $body = json_decode($response->getBody(), true);

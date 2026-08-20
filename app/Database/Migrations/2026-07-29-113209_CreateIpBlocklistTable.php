@@ -11,7 +11,7 @@ class CreateIpBlocklistTable extends Migration
         if (!$this->db->tableExists('ip_blocklist')) {
             $this->forge->addField([
                 'id' => [
-                    'type' => 'UUID',
+                    'type' => 'VARCHAR', 'constraint' => '36',
                 ],
                 'ip_address' => [
                     'type' => 'VARCHAR',

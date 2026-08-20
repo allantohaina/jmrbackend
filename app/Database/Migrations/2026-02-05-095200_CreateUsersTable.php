@@ -9,7 +9,7 @@ class CreateUsersTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type' => 'UUID',
+                'type' => 'VARCHAR', 'constraint' => '36',
             ],
             'email' => [
                 'type' => 'VARCHAR',

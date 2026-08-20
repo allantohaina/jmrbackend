@@ -11,14 +11,14 @@ class CreateBanAndBlacklistTables extends Migration
         if (!$this->db->tableExists('user_bans')) {
             $this->forge->addField([
                 'id' => [
-                    'type' => 'UUID',
+                    'type' => 'VARCHAR', 'constraint' => '36',
                 ],
                 'user_id' => [
-                    'type' => 'UUID',
+                    'type' => 'VARCHAR', 'constraint' => '36',
                     'null' => false,
                 ],
                 'banned_by' => [
-                    'type' => 'UUID',
+                    'type' => 'VARCHAR', 'constraint' => '36',
                     'null' => true,
                 ],
                 'reason' => [
@@ -44,7 +44,7 @@ class CreateBanAndBlacklistTables extends Migration
         if (!$this->db->tableExists('user_blacklist')) {
             $this->forge->addField([
                 'id' => [
-                    'type' => 'UUID',
+                    'type' => 'VARCHAR', 'constraint' => '36',
                 ],
                 'email' => [
                     'type' => 'VARCHAR',

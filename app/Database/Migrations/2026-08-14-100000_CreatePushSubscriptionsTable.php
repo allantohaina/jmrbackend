@@ -17,15 +17,15 @@ class CreatePushSubscriptionsTable extends Migration
                 'user_id' => $this->uuidField(),
                 'endpoint' => [
                     'type' => 'VARCHAR',
-                    'constraint' => 1000,
+                    'constraint' => 500,
                 ],
                 'keys_p256dh' => [
                     'type' => 'VARCHAR',
-                    'constraint' => 500,
+                    'constraint' => 255,
                 ],
                 'keys_auth' => [
                     'type' => 'VARCHAR',
-                    'constraint' => 500,
+                    'constraint' => 255,
                 ],
                 'created_at' => $this->timestampField(true),
             ]);

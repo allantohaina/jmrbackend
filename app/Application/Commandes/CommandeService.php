@@ -23,9 +23,10 @@ class CommandeService
         $this->model = new CommandeModel();
     }
 
-    public function list(?string $userId = null): Result
+    public function list(?string $userId = null, ?string $role = null): Result
     {
-        if ($userId) {
+        $isAdmin = ($role === 'admin');
+        if ($userId && !$isAdmin) {
             $commandes = $this->model->where('client_id', $userId)->orderBy('created_at', 'DESC')->findAll();
         } else {
             $commandes = $this->model->getCommandesWithClient();
@@ -94,7 +95,7 @@ class CommandeService
         }
 
         if (!$this->model->insert($data)) {
-            return Result::fail(['error' => 'Erreur lors de la création de la commande.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur lors de la création de la commande.', 'messages' => $this->model->errors()], 422);
         }
         $commande = $this->model->find($this->model->getInsertID());
         return Result::created(['data' => $commande]);
@@ -136,7 +137,7 @@ class CommandeService
 
         if (isset($data['id'])) unset($data['id']);
         if (!$this->model->update($id, $data)) {
-            return Result::fail(['error' => 'Erreur lors de la mise à jour.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur lors de la mise à jour.', 'messages' => $this->model->errors()], 422);
         }
         return Result::ok(['data' => $this->model->find($id)]);
     }

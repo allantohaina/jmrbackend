@@ -10,10 +10,10 @@ class CreateOrderCollaborationTables extends Migration
     {
         if (!$this->db->tableExists('payments')) {
             $this->forge->addField([
-                'id' => ['type' => 'UUID'], 'quote_id' => ['type' => 'UUID', 'null' => false], 'commande_id' => ['type' => 'UUID', 'null' => true],
+                'id' => ['type' => 'VARCHAR', 'constraint' => '36'], 'quote_id' => ['type' => 'VARCHAR', 'constraint' => '36', 'null' => false], 'commande_id' => ['type' => 'VARCHAR', 'constraint' => '36', 'null' => true],
                 'phase' => ['type' => 'VARCHAR', 'constraint' => 20, 'null' => false], 'amount' => ['type' => 'DECIMAL', 'constraint' => '15,2', 'null' => false],
                 'status' => ['type' => 'VARCHAR', 'constraint' => 20, 'null' => false, 'default' => 'submitted'], 'proof_path' => ['type' => 'VARCHAR', 'constraint' => 500, 'null' => true],
-                'submitted_by' => ['type' => 'UUID', 'null' => true], 'reviewed_by' => ['type' => 'UUID', 'null' => true], 'review_note' => ['type' => 'TEXT', 'null' => true],
+                'submitted_by' => ['type' => 'VARCHAR', 'constraint' => '36', 'null' => true], 'reviewed_by' => ['type' => 'VARCHAR', 'constraint' => '36', 'null' => true], 'review_note' => ['type' => 'TEXT', 'null' => true],
                 'reviewed_at' => ['type' => 'TIMESTAMP', 'null' => true], 'created_at' => ['type' => 'TIMESTAMP', 'null' => false], 'updated_at' => ['type' => 'TIMESTAMP', 'null' => true],
             ]);
             $this->forge->addKey('id', true); $this->forge->addKey(['quote_id', 'phase']); $this->forge->addKey(['commande_id', 'status']);
@@ -24,9 +24,9 @@ class CreateOrderCollaborationTables extends Migration
 
         if (!$this->db->tableExists('notifications')) {
             $this->forge->addField([
-                'id' => ['type' => 'UUID'], 'recipient_user_id' => ['type' => 'UUID', 'null' => false],
-                'actor_user_id' => ['type' => 'UUID', 'null' => true], 'entity_type' => ['type' => 'VARCHAR', 'constraint' => 40, 'null' => false],
-                'entity_id' => ['type' => 'UUID', 'null' => true], 'event' => ['type' => 'VARCHAR', 'constraint' => 80, 'null' => false],
+                'id' => ['type' => 'VARCHAR', 'constraint' => '36'], 'recipient_user_id' => ['type' => 'VARCHAR', 'constraint' => '36', 'null' => false],
+                'actor_user_id' => ['type' => 'VARCHAR', 'constraint' => '36', 'null' => true], 'entity_type' => ['type' => 'VARCHAR', 'constraint' => 40, 'null' => false],
+                'entity_id' => ['type' => 'VARCHAR', 'constraint' => '36', 'null' => true], 'event' => ['type' => 'VARCHAR', 'constraint' => 80, 'null' => false],
                 'type' => ['type' => 'VARCHAR', 'constraint' => 20, 'null' => false, 'default' => 'info'],
                 'title' => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => false], 'message' => ['type' => 'TEXT', 'null' => false],
                 'action_url' => ['type' => 'VARCHAR', 'constraint' => 500, 'null' => true], 'read_at' => ['type' => 'TIMESTAMP', 'null' => true],
@@ -40,9 +40,9 @@ class CreateOrderCollaborationTables extends Migration
 
         if (!$this->db->tableExists('production_tickets')) {
             $this->forge->addField([
-                'id' => ['type' => 'UUID'], 'commande_id' => ['type' => 'UUID', 'null' => false], 'quote_id' => ['type' => 'UUID', 'null' => true],
+                'id' => ['type' => 'VARCHAR', 'constraint' => '36'], 'commande_id' => ['type' => 'VARCHAR', 'constraint' => '36', 'null' => false], 'quote_id' => ['type' => 'VARCHAR', 'constraint' => '36', 'null' => true],
                 'status' => ['type' => 'VARCHAR', 'constraint' => 30, 'null' => false, 'default' => 'open'], 'changes_locked_at' => ['type' => 'TIMESTAMP', 'null' => true],
-                'created_by' => ['type' => 'UUID', 'null' => true], 'closed_at' => ['type' => 'TIMESTAMP', 'null' => true],
+                'created_by' => ['type' => 'VARCHAR', 'constraint' => '36', 'null' => true], 'closed_at' => ['type' => 'TIMESTAMP', 'null' => true],
                 'created_at' => ['type' => 'TIMESTAMP', 'null' => false], 'updated_at' => ['type' => 'TIMESTAMP', 'null' => true],
             ]);
             $this->forge->addKey('id', true); $this->forge->addUniqueKey('commande_id');
@@ -53,7 +53,7 @@ class CreateOrderCollaborationTables extends Migration
 
         if (!$this->db->tableExists('production_tasks')) {
             $this->forge->addField([
-                'id' => ['type' => 'UUID'], 'ticket_id' => ['type' => 'UUID', 'null' => false], 'assigned_worker_id' => ['type' => 'UUID', 'null' => true],
+                'id' => ['type' => 'VARCHAR', 'constraint' => '36'], 'ticket_id' => ['type' => 'VARCHAR', 'constraint' => '36', 'null' => false], 'assigned_worker_id' => ['type' => 'VARCHAR', 'constraint' => '36', 'null' => true],
                 'title' => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => false], 'description' => ['type' => 'TEXT', 'null' => true],
                 'status' => ['type' => 'VARCHAR', 'constraint' => 30, 'null' => false, 'default' => 'todo'], 'due_at' => ['type' => 'TIMESTAMP', 'null' => true],
                 'completed_at' => ['type' => 'TIMESTAMP', 'null' => true], 'created_at' => ['type' => 'TIMESTAMP', 'null' => false], 'updated_at' => ['type' => 'TIMESTAMP', 'null' => true],

@@ -13,6 +13,10 @@ class AddPhoneUniqueToUsers extends Migration
 
     public function down()
     {
-        $this->db->simpleQuery('DROP INDEX users_phone_uq');
+        if (strtolower((string) $this->db->DBDriver) === 'mysqli') {
+            $this->db->simpleQuery('ALTER TABLE users DROP INDEX users_phone_uq');
+        } else {
+            $this->db->simpleQuery('DROP INDEX users_phone_uq');
+        }
     }
 }

@@ -9,11 +9,11 @@ class CreateTokenTables extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type' => 'UUID',
+                'type' => 'VARCHAR', 'constraint' => '36',
                 'null' => false,
             ],
             'user_id' => [
-                'type' => 'UUID',
+                'type' => 'VARCHAR', 'constraint' => '36',
                 'null' => false,
             ],
             'token_hash' => [
@@ -30,7 +30,7 @@ class CreateTokenTables extends Migration
                 'null' => true,
             ],
             'replaced_by' => [
-                'type' => 'UUID',
+                'type' => 'VARCHAR', 'constraint' => '36',
                 'null' => true,
             ],
             'created_at' => [
@@ -55,7 +55,7 @@ class CreateTokenTables extends Migration
 
         $this->forge->addField([
             'id' => [
-                'type' => 'UUID',
+                'type' => 'VARCHAR', 'constraint' => '36',
                 'null' => false,
             ],
             'jti' => [

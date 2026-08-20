@@ -11,10 +11,10 @@ class CreateBonLivraisonTable extends Migration
         if (!$this->db->tableExists('bons_livraison')) {
             $this->forge->addField([
                 'id' => [
-                    'type' => 'UUID',
+                    'type' => 'VARCHAR', 'constraint' => '36',
                 ],
                 'commande_id' => [
-                    'type' => 'UUID',
+                    'type' => 'VARCHAR', 'constraint' => '36',
                     'null' => false,
                 ],
                 'numero' => [
@@ -32,7 +32,7 @@ class CreateBonLivraisonTable extends Migration
                     'null' => false,
                 ],
                 'articles' => [
-                    'type' => 'JSON',
+                    'type' => 'TEXT',
                     'null' => true,
                 ],
                 'statut' => [

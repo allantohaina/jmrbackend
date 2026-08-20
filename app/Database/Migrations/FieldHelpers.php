@@ -7,9 +7,25 @@ trait FieldHelpers
     protected function uuidField(bool $nullable = false): array
     {
         return [
-            'type' => 'UUID',
+            'type' => 'VARCHAR',
+            'constraint' => '36',
             'null' => $nullable,
         ];
+    }
+
+    protected function uuidFkField(bool $nullable = false): array
+    {
+        $isPg = str_contains(strtolower((string) $this->db->DBDriver), 'postgre');
+        $field = [
+            'type' => $isPg ? 'UUID' : 'VARCHAR',
+            'null' => $nullable,
+        ];
+
+        if (! $isPg) {
+            $field['constraint'] = '36';
+        }
+
+        return $field;
     }
 
     protected function varcharField(int $length, bool $nullable = false, ?string $default = null): array
@@ -43,10 +59,10 @@ trait FieldHelpers
         ];
     }
 
-    protected function jsonbField(bool $nullable = true): array
+    protected function jsonField(bool $nullable = true): array
     {
         return [
-            'type' => 'JSON',
+            'type' => 'TEXT',
             'null' => $nullable,
         ];
     }

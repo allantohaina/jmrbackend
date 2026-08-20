@@ -10,7 +10,7 @@ class CreateQuotesTable extends Migration
     {
         $this->forge->addField([
             'id' => [
-                'type' => 'UUID',
+                'type' => 'VARCHAR', 'constraint' => '36',
             ],
             'name' => [
                 'type' => 'VARCHAR',
@@ -119,11 +119,11 @@ class CreateQuotesTable extends Migration
                 'default' => false,
             ],
             'files' => [
-                'type' => 'JSON',
+                'type' => 'TEXT',
                 'null' => true,
             ],
             'notifications' => [
-                'type' => 'JSON',
+                'type' => 'TEXT',
                 'null' => true,
             ],
             'created_at' => [

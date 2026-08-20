@@ -23,7 +23,7 @@ class QuoteCheckpoints extends ResourceController
     {
         try {
             $quoteId = $this->request->getGet('quote_id');
-            if (!$quoteId) return $this->failValidation('quote_id requis.');
+            if (!$quoteId) return $this->failValidationErrors(['error' => 'quote_id requis.']);
             $result = $this->svc()->listByQuote((string)$quoteId);
             return $this->respond($result->getPayload(), $result->getStatus());
         } catch (\Throwable $e) {

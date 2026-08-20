@@ -44,7 +44,7 @@ class BonLivraisonService
         }
 
         if (!$this->model->insert($data)) {
-            return Result::fail(['error' => 'Erreur lors de la création du bon de livraison.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur lors de la création du bon de livraison.', 'messages' => $this->model->errors()], 422);
         }
 
         $bon = $this->model->find($this->model->getInsertID());
@@ -67,7 +67,7 @@ class BonLivraisonService
         }
 
         if (!$this->model->update($id, $data)) {
-            return Result::fail(['error' => 'Erreur lors de la mise à jour.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur lors de la mise à jour.', 'messages' => $this->model->errors()], 422);
         }
 
         $updated = $this->model->find($id);

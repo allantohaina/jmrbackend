@@ -14,6 +14,7 @@ class PaymentModel extends Model
     protected $allowedFields = [
         'quote_id', 'commande_id', 'phase', 'amount', 'status', 'proof_path',
         'submitted_by', 'reviewed_by', 'review_note', 'reviewed_at',
+        'payment_type', 'transaction_ref',
     ];
     protected $useTimestamps = true;
     protected $createdField = 'created_at';

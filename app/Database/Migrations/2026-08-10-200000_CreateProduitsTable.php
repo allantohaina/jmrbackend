@@ -22,7 +22,7 @@ class CreateProduitsTable extends Migration
                     'null' => false,
                     'default' => 0,
                 ],
-                'conso_tissu_par_taille' => $this->jsonbField(true),
+                'conso_tissu_par_taille' => $this->jsonField(true),
                 'niveau_difficulte_defaut' => [
                     'type' => 'DECIMAL',
                     'constraint' => '4,2',

@@ -4,7 +4,7 @@ namespace App\Traits;
 
 trait UuidTrait
 {
-    protected static function uuidV4(): string
+    public static function uuidV4(): string
     {
         $bytes = random_bytes(16);
         $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);

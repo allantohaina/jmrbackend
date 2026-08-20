@@ -22,7 +22,8 @@ class Commandes extends ResourceController
     public function index()
     {
         $userId = $this->request->user['id'] ?? null;
-        $result = $this->service()->list($userId);
+        $role = $this->request->user['role'] ?? null;
+        $result = $this->service()->list($userId, $role);
         return $this->respond($result->getPayload());
     }
 

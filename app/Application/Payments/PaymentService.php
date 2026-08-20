@@ -33,6 +33,35 @@ class PaymentService
         return Result::ok(['data' => $row]);
     }
 
+    public function submitForQuote(string $quoteId, array $data, ?string $actorId = null): Result
+    {
+        $quoteModel = new \App\Models\QuoteModel();
+        $quote = $quoteModel->find($quoteId);
+        if (!$quote) return Result::notFound('Devis introuvable.');
+
+        $paymentModel = $this->model;
+        $payment = $paymentModel->where('quote_id', $quoteId)
+            ->where('status', 'submitted')
+            ->orderBy('created_at', 'ASC')
+            ->first();
+        if (!$payment) {
+            return Result::fail(['error' => 'Aucune tranche de paiement en attente pour ce devis.'], 422);
+        }
+
+        $updateData = [
+            'proof_path' => $data['proof_path'] ?? null,
+            'submitted_by' => $actorId,
+        ];
+        if (!empty($data['payment_type'])) $updateData['payment_type'] = $data['payment_type'];
+        if (!empty($data['transaction_ref'])) $updateData['transaction_ref'] = $data['transaction_ref'];
+
+        if (!$paymentModel->update($payment['id'], $updateData)) {
+            return Result::fail(['error' => 'Erreur lors de l\'enregistrement de la preuve.', 'messages' => $paymentModel->errors()], 422);
+        }
+
+        return Result::ok(['data' => $paymentModel->find($payment['id'])]);
+    }
+
     public function updateStatus(string $id, string $status, ?string $reviewNote = null, ?string $reviewedBy = null): Result
     {
         $row = $this->model->find($id);
@@ -46,7 +75,7 @@ class PaymentService
         if ($reviewedBy !== null) $updateData['reviewed_by'] = $reviewedBy;
 
         if (!$this->model->update($id, $updateData)) {
-            return Result::fail(['error' => 'Erreur lors de la mise à jour.'], 500);
+            return Result::fail(['error' => 'Erreur lors de la mise à jour.'], 422);
         }
 
         // If verified, update the quote's deposit_paid or balance_paid

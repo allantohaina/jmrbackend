@@ -50,26 +50,9 @@ class AddForeignKeyConstraints extends Migration
 
     public function down()
     {
-        $keys = [
-            'fk_refresh_tokens_user',
-            'fk_user_consents_user',
-            'fk_data_requests_user',
-            'fk_audit_logs_actor',
-            'fk_token_history_user',
-            'fk_order_history_project',
-            'fk_order_history_actor',
-        ];
-
-        foreach ($keys as $key) {
-            $this->forge->dropForeignKey('refresh_tokens', $key, true);
-            $this->forge->dropForeignKey('user_consents', $key, true);
-            $this->forge->dropForeignKey('data_requests', $key, true);
-            $this->forge->dropForeignKey('audit_logs', $key, true);
-            $this->forge->dropForeignKey('token_history', $key, true);
-            $this->forge->dropForeignKey('order_project_history', $key, true);
-            $this->forge->dropForeignKey('production_workflows', $key, true);
-            $this->forge->dropForeignKey('production_checklists', $key, true);
-            $this->forge->dropForeignKey('assemblages', $key, true);
-        }
+        // Les contraintes réelles sont gérées par la migration
+        // 2026-08-20-100000_AddReferentialIntegrity (qui les supprime à son tour).
+        // forge->dropForeignKey() sans createTable() lèverait une erreur
+        // (contraintes inexistantes), on ne fait donc rien ici.
     }
 }

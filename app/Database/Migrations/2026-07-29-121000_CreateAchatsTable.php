@@ -11,7 +11,7 @@ class CreateAchatsTable extends Migration
         if (!$this->db->tableExists('achats')) {
             $this->forge->addField([
                 'id' => [
-                    'type' => 'UUID',
+                    'type' => 'VARCHAR', 'constraint' => '36',
                 ],
                 'fournisseur' => [
                     'type' => 'VARCHAR',

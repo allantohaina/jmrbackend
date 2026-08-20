@@ -26,7 +26,8 @@ class Quotes extends ResourceController
     {
         try {
             $userId = $this->request->user['id'] ?? null;
-            $result = $this->quoteService()->list($this->request, $userId);
+            $role = $this->request->user['role'] ?? null;
+            $result = $this->quoteService()->list($this->request, $userId, $role);
             return $this->respond($result->getPayload(), $result->getStatus());
         } catch (Throwable $e) {
             log_message('error', 'Quotes index error: ' . $e->getMessage());
@@ -41,8 +42,12 @@ class Quotes extends ResourceController
             unset($input['altcha']);
 
             $userId = $this->request->user['id'] ?? null;
-            if ($userId) {
+            $role = $this->request->user['role'] ?? null;
+            if ($role !== 'admin' && $userId) {
                 $input['client_id'] = $userId;
+                $input['email'] = $this->request->user['email'] ?? ($input['email'] ?? null);
+                $input['name'] = trim(($this->request->user['first_name'] ?? '') . ' ' . ($this->request->user['last_name'] ?? '')) ?: ($input['name'] ?? null);
+                $input['phone'] = $this->request->user['phone'] ?? ($input['phone'] ?? null);
             }
 
             $result = $this->quoteService()->create($input, $this->request);
@@ -81,14 +86,16 @@ class Quotes extends ResourceController
             }
             // Only expose safe fields for public view
             return $this->respond([
-                'id' => $result['id'],
-                'name' => $result['name'],
-                'category' => $result['category'],
-                'status' => $result['status'],
-                'amount' => $result['amount'],
-                'deposit_paid' => $result['deposit_paid'],
-                'balance_paid' => $result['balance_paid'],
-                'created_at' => $result['created_at'],
+                'data' => [
+                    'id' => $result['id'],
+                    'name' => $result['name'],
+                    'category' => $result['category'],
+                    'status' => $result['status'],
+                    'amount' => $result['amount'],
+                    'deposit_paid' => $result['deposit_paid'],
+                    'balance_paid' => $result['balance_paid'],
+                    'created_at' => $result['created_at'],
+                ],
             ]);
         } catch (Throwable $e) {
             log_message('error', 'Quotes share error: ' . $e->getMessage());
@@ -124,6 +131,17 @@ class Quotes extends ResourceController
             // ou enregistrer / mettre à jour un brouillon (status 'draft').
             if (!$isAdmin && $isOwner && $status && !in_array($status, ['pending', 'accepted', 'rejected', 'draft'], true)) {
                 return $this->failForbidden('Transition de statut non autorisée pour ce devis.');
+            }
+
+            // Les champs financiers / de rattachement sont réservés à l'admin :
+            // un client ne peut jamais modifier les montants ou l'attribution du devis.
+            if (!$isAdmin) {
+                $additionalData = array_filter($additionalData, static fn($key) => !in_array($key, [
+                    'amount', 'deposit_amount', 'balance_amount', 'deposit_paid', 'balance_paid',
+                    'client_id', 'produit_id', 'confirmation_days', 'date_livraison_prevue',
+                    'prix_unitaire_calcule', 'prix_total_calcule', 'cout_matiere',
+                    'cout_main_oeuvre', 'cout_frais_generaux',
+                ], true), ARRAY_FILTER_USE_KEY);
             }
 
             $result = $this->quoteService()->updateStatus($id, $status, $additionalData, $actor);
@@ -183,7 +201,7 @@ class Quotes extends ResourceController
             if (($actor['role'] ?? null) !== 'admin') {
                 return $this->failForbidden('Seul un administrateur peut créer une commande.');
             }
-            $result = $this->quoteService()->convertToCommande((string)$id);
+            $result = $this->quoteService()->convertToCommande((string)$id, $this->getInputData());
             if (!$result->isSuccess()) {
                 return $this->fail($result->getPayload(), $result->getStatus());
             }

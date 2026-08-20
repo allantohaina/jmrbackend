@@ -43,7 +43,7 @@ class QuoteAddonService
         }
         $data['status'] = 'pending';
         if (!$this->model->insert($data)) {
-            return Result::fail(['error' => 'Erreur lors de la création.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur lors de la création.', 'messages' => $this->model->errors()], 422);
         }
         $id = $this->model->getInsertID();
         return Result::created(['data' => $this->model->find($id)]);
@@ -60,7 +60,7 @@ class QuoteAddonService
         }
         
         if (!$this->model->update($id, $updateData)) {
-            return Result::fail(['error' => 'Erreur lors de la mise à jour.'], 500);
+            return Result::fail(['error' => 'Erreur lors de la mise à jour.'], 422);
         }
 
         // If addon is included, add its price to the quote's balance_amount and sync tranche 2

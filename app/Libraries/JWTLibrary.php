@@ -12,7 +12,11 @@ class JWTLibrary
 
     public function __construct()
     {
-        $this->secretKey = getenv('JWT_SECRET_KEY') ?: 'your-secret-key-change-this-in-production';
+        $secret = getenv('JWT_SECRET_KEY');
+        if (!is_string($secret) || $secret === '') {
+            throw new \RuntimeException('JWT_SECRET_KEY n\'est pas définie. Ajoutez-la dans le fichier .env.');
+        }
+        $this->secretKey = $secret;
         $this->issuer = getenv('JWT_ISSUER') ?: 'jmr-textile';
         $this->audience = getenv('JWT_AUDIENCE') ?: 'jmr-textile-client';
         $this->leeway = (int) (getenv('JWT_LEEWAY') ?: 0);

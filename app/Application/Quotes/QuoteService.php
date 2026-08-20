@@ -147,6 +147,13 @@ class QuoteService
             $model->skipValidation(true);
         }
 
+        // Lier le devis au compte client s'il existe (client_id absent mais email correspondant)
+        $clientId = $data['client_id'] ?? null;
+        if (!$clientId && !empty($data['email'])) {
+            $linkedUser = (new UserModel())->where('email', $data['email'])->first();
+            if ($linkedUser) $clientId = $linkedUser['id'];
+        }
+
         $quoteData = [
             'titre' => null,
             'progression' => 0,
@@ -167,7 +174,7 @@ class QuoteService
             'request_type' => $data['request_type'] ?? 'new',
             'modify_code' => $data['modify_code'] ?? null,
             'status' => $data['status'] ?? 'pending',
-            'client_id' => $data['client_id'] ?? null,
+            'client_id' => $clientId,
             'produit_id' => $data['produit_id'] ?? null,
             'matiere_fournie_par' => $data['matiere_fournie_par'] ?? 'atelier',
             'conso_tissu_unitaire' => $data['conso_tissu_unitaire'] ?? null,
@@ -269,12 +276,43 @@ class QuoteService
             : $userModel->where('email', $quote['email'] ?? '')->first();
         $clientId = $client['id'] ?? $extra['client_id'] ?? null;
         if (!$clientId) {
-            return Result::fail(['error' => 'Client introuvable pour créer la commande.'], 422);
+            // Auto-création du compte client à partir de l'email du devis
+            $email = strtolower(trim((string)($quote['email'] ?? '')));
+            if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return Result::fail(['error' => 'Client introuvable pour créer la commande.'], 422);
+            }
+            $nameParts = preg_split('/\s+/', trim((string)($quote['name'] ?? '')), 2);
+            $insert = $userModel->insert([
+                'email' => $email,
+                'password' => bin2hex(random_bytes(8)) . 'A1!',
+                'first_name' => $nameParts[0] ?: 'Client',
+                'last_name' => $nameParts[1] ?? 'JMR',
+                'role' => 'user',
+            ]);
+            if (!$insert) {
+                return Result::fail(['error' => 'Impossible de créer le compte client pour la commande.', 'messages' => $userModel->errors()], 422);
+            }
+            $clientId = $userModel->getInsertID();
         }
         $numero = $extra['numero'] ?? ('CMD-' . strtoupper(substr(md5($quoteId . time()), 0, 8)));
-        $quantite = (int)($extra['quantite'] ?? $quote['quantite_commandee'] ?? $quote['quantite'] ?? 1);
-        $prixUnitaire = (float)($extra['prix_unitaire'] ?? $quote['prix_unitaire_calcule'] ?? $quote['amount'] ?? 0);
-        if ($quantite > 0 && $prixUnitaire == 0 && ($quote['amount'] ?? 0) > 0) {
+        $quantite = (int)($extra['quantite'] ?? 0);
+        if ($quantite <= 0) {
+            $quantite = (int)($quote['quantite_commandee'] ?? 0);
+        }
+        if ($quantite <= 0) {
+            $quantite = (int)($quote['quantite'] ?? 0);
+        }
+        if ($quantite <= 0) {
+            $quantite = 1;
+        }
+        $prixUnitaire = (float)($extra['prix_unitaire'] ?? 0);
+        if ($prixUnitaire <= 0) {
+            $prixUnitaire = (float)($quote['prix_unitaire_calcule'] ?? 0);
+        }
+        if ($prixUnitaire <= 0) {
+            $prixUnitaire = (float)($quote['amount'] ?? 0);
+        }
+        if ($quantite > 1 && $prixUnitaire == 0 && ($quote['amount'] ?? 0) > 0) {
             $prixUnitaire = (float)$quote['amount'] / $quantite;
         }
         $commandeData = [
@@ -294,11 +332,18 @@ class QuoteService
         return $service->create($commandeData);
     }
 
-    public function list(IncomingRequest $request, ?string $userId = null): Result
+    public function list(IncomingRequest $request, ?string $userId = null, ?string $role = null): Result
     {
         $model = new QuoteModel();
-        if ($userId) {
-            $quotes = $model->where('client_id', $userId)->orderBy('created_at', 'DESC')->findAll();
+        $isAdmin = ($role === 'admin');
+        if ($userId && !$isAdmin) {
+            $userEmail = (new UserModel())->find($userId)['email'] ?? null;
+            $quotes = $model->groupStart()
+                ->where('client_id', $userId)
+                ->orWhere('email', $userEmail)
+                ->groupEnd()
+                ->orderBy('created_at', 'DESC')
+                ->findAll();
             $total = count($quotes);
             return Result::ok(['data' => $quotes, 'total' => $total]);
         }

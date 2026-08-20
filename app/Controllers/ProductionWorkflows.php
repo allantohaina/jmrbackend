@@ -80,6 +80,12 @@ class ProductionWorkflows extends ResourceController
         return $this->respondResult($result);
     }
 
+    public function kanban()
+    {
+        $result = (new \App\Application\Production\Kanban\KanbanService())->board();
+        return $this->respond($result->getPayload(), $result->getStatus());
+    }
+
     private function respondResult(Result $result, bool $created = false)
     {
         if (!in_array($result->getType(), [Result::TYPE_OK, Result::TYPE_CREATED], true)) {

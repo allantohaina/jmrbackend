@@ -35,7 +35,7 @@ class AchatService
         $data['statut'] = $data['statut'] ?? 'En attente';
 
         if (!$this->model->insert($data)) {
-            return Result::fail(['error' => 'Erreur lors de la création de l\'achat.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur lors de la création de l\'achat.', 'messages' => $this->model->errors()], 422);
         }
 
         $achat = $this->model->find($this->model->getInsertID());
@@ -50,7 +50,7 @@ class AchatService
         }
 
         if (!$this->model->update($id, $data)) {
-            return Result::fail(['error' => 'Erreur lors de la mise à jour.', 'messages' => $this->model->errors()], 500);
+            return Result::fail(['error' => 'Erreur lors de la mise à jour.', 'messages' => $this->model->errors()], 422);
         }
 
         return Result::ok(['data' => $this->model->find($id)]);

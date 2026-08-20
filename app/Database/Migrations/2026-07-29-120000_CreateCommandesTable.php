@@ -11,14 +11,14 @@ class CreateCommandesTable extends Migration
         if (!$this->db->tableExists('commandes')) {
             $this->forge->addField([
                 'id' => [
-                    'type' => 'UUID',
+                    'type' => 'VARCHAR', 'constraint' => '36',
                 ],
                 'cotation_id' => [
-                    'type' => 'UUID',
+                    'type' => 'VARCHAR', 'constraint' => '36',
                     'null' => true,
                 ],
                 'client_id' => [
-                    'type' => 'UUID',
+                    'type' => 'VARCHAR', 'constraint' => '36',
                     'null' => false,
                 ],
                 'numero' => [

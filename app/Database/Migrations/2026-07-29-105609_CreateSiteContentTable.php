@@ -18,7 +18,6 @@ class CreateSiteContentTable extends Migration
                 'value' => [
                     'type' => 'TEXT',
                     'null' => false,
-                    'default' => '',
                 ],
                 'updated_at' => [
                     'type' => 'TIMESTAMP',

@@ -7,3 +7,4 @@ writable/debugbar/
 node_modules/
 .DS_Store
 Thumbs.db
+build/
