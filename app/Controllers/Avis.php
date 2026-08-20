@@ -26,6 +26,7 @@ class Avis extends ResourceController
         try {
             $result = $this->service()->publicList((string)$produitId);
             if (!$result->isSuccess()) return $this->fail($result->getPayload(), $result->getStatus());
+            $this->response->setHeader('Cache-Control', 'public, max-age=120');
             return $this->respond($result->getPayload());
         } catch (Throwable $e) {
             log_message('error', 'Avis publicList error: ' . $e->getMessage());

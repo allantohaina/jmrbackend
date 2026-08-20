@@ -3,76 +3,80 @@
 namespace App\Application\Stats;
 
 use App\Application\Shared\Result;
-use App\Models\AvisProduitModel;
-use App\Models\CommandeModel;
-use App\Models\MatiereModel;
-use App\Models\PaymentModel;
 use App\Models\ProduitModel;
-use App\Models\QuoteModel;
 use App\Models\UserModel;
 
 class StatsService
 {
     public function dashboard(): Result
     {
-        $quoteModel = new QuoteModel();
-        $quotes = $quoteModel->select('status')->findAll();
+        $db = \Config\Database::connect();
+
+        // --- Devis (agrégat par statut) ---
         $counts = ['pending' => 0, 'sent' => 0, 'accepted' => 0, 'rejected' => 0, 'draft' => 0, 'needs_info' => 0];
-        foreach ($quotes as $q) {
-            $s = (string)($q['status'] ?? 'pending');
-            $counts[$s] = ($counts[$s] ?? 0) + 1;
+        $totalDevis = 0;
+        $quoteRows = $db->table('quotes')
+            ->select('status, COUNT(*) AS c')
+            ->where('deleted_at IS NULL')
+            ->groupBy('status')
+            ->get()->getResultArray();
+        foreach ($quoteRows as $q) {
+            $s = (string) ($q['status'] ?? 'pending');
+            $counts[$s] = (int) ($q['c'] ?? 0);
+            $totalDevis += (int) ($q['c'] ?? 0);
         }
-        $totalDevis = max(1, count($quotes));
-        $tauxAcceptation = round(($counts['accepted'] / $totalDevis) * 100, 1);
+        $tauxAcceptation = $totalDevis > 0 ? round(($counts['accepted'] / $totalDevis) * 100, 1) : 0;
 
-        $paymentModel = new PaymentModel();
-        $payments = $paymentModel->findAll();
-        $caTotal = 0;
-        $caMois = 0;
-        $nbPaiements = 0;
-        $moisCourant = date('Y-m');
-        foreach ($payments as $p) {
-            if (($p['status'] ?? '') !== 'verified') continue;
-            $caTotal += (float)($p['amount'] ?? 0);
-            $nbPaiements++;
-            $date = $p['reviewed_at'] ?? $p['created_at'] ?? '';
-            if (substr((string)$date, 0, 7) === $moisCourant) {
-                $caMois += (float)($p['amount'] ?? 0);
-            }
-        }
+        // --- Paiements (agrégats SQL) ---
+        $caTotal = (float) ($db->table('payments')
+            ->select('COALESCE(SUM(amount), 0) AS v')
+            ->where('status', 'verified')
+            ->get()->getRowArray()['v'] ?? 0);
+        $nbPaiements = $db->table('payments')->where('status', 'verified')->countAllResults();
+        $caMois = (float) ($db->table('payments')
+            ->select('COALESCE(SUM(amount), 0) AS v')
+            ->where('status', 'verified')
+            ->where('COALESCE(reviewed_at, created_at) >=', date('Y-m-01 00:00:00'))
+            ->get()->getRowArray()['v'] ?? 0);
 
-        $commandeModel = new CommandeModel();
-        $commandes = $commandeModel->orderBy('created_at', 'DESC')->findAll();
-        $nbCommandes = count($commandes);
-        $enCours = 0;
-        $livrees = 0;
-        $enRetard = 0;
+        // --- Commandes (agrégats SQL) ---
         $today = date('Y-m-d');
-        $caLivreMois = 0;
-        foreach ($commandes as $c) {
-            if (($c['statut_production'] ?? '') === 'Livrée') {
-                $livrees++;
-                if (($c['date_livraison_reelle'] ?? false) && substr((string)$c['date_livraison_reelle'], 0, 7) === $moisCourant) {
-                    $caLivreMois += (float)($c['total'] ?? 0);
-                }
-            } else {
-                $enCours++;
-                if (($c['date_livraison_prevue'] ?? false) && $c['date_livraison_prevue'] < $today) {
-                    $enRetard++;
-                }
-            }
-        }
+        $nbCommandes = $db->table('commandes')->where('deleted_at IS NULL')->countAllResults();
+        $livrees = $db->table('commandes')
+            ->where('deleted_at IS NULL')
+            ->where('statut_production', 'Livrée')
+            ->countAllResults();
+        $enCours = $db->table('commandes')
+            ->where('deleted_at IS NULL')
+            ->where('statut_production !=', 'Livrée')
+            ->countAllResults();
+        $enRetard = $db->table('commandes')
+            ->where('deleted_at IS NULL')
+            ->where('statut_production !=', 'Livrée')
+            ->where('date_livraison_prevue IS NOT NULL')
+            ->where('date_livraison_prevue <', $today)
+            ->countAllResults();
+        $caLivreMois = (float) ($db->table('commandes')
+            ->select('COALESCE(SUM(total), 0) AS v')
+            ->where('deleted_at IS NULL')
+            ->where('statut_production', 'Livrée')
+            ->where('date_livraison_reelle >=', date('Y-m-01 00:00:00'))
+            ->get()->getRowArray()['v'] ?? 0);
 
-        $matieres = (new MatiereModel())->findAll();
-        $nbAlertesStock = count(array_filter($matieres, static fn($m) => (float)($m['stock_actuel'] ?? 0) <= (float)($m['stock_seuil'] ?? 0)));
+        // --- Matières premières (agrégats SQL) ---
+        $nbMatieres = $db->table('matieres')->where('deleted_at IS NULL')->countAllResults();
+        $nbAlertesStock = $db->table('matieres')
+            ->where('deleted_at IS NULL')
+            ->where('stock_actuel <= stock_seuil')
+            ->countAllResults();
 
-        $avis = (new AvisProduitModel())->where('statut', 'approved')->findAll();
-        $noteMoyenne = 0;
-        if ($avis !== []) {
-            $sum = 0;
-            foreach ($avis as $a) $sum += (int)($a['note'] ?? 0);
-            $noteMoyenne = round($sum / count($avis), 2);
-        }
+        // --- Avis (agrégat SQL) ---
+        $avisAgg = $db->table('avis_produits')
+            ->select('COUNT(*) AS c, COALESCE(AVG(note), 0) AS avg')
+            ->where('statut', 'approved')
+            ->get()->getRowArray();
+        $nbAvis = (int) ($avisAgg['c'] ?? 0);
+        $noteMoyenne = round((float) ($avisAgg['avg'] ?? 0), 2);
 
         $clients = (new UserModel())->where('role', 'user')->countAllResults();
         $employes = (new UserModel())->whereIn('role', ['admin', 'worker'])->countAllResults();
@@ -81,7 +85,7 @@ class StatsService
         return Result::ok([
             'data' => [
                 'devis' => [
-                    'total' => count($quotes),
+                    'total' => $totalDevis,
                     'en_attente' => ($counts['pending'] ?? 0) + ($counts['needs_info'] ?? 0),
                     'envoyes' => $counts['sent'] ?? 0,
                     'acceptes' => $counts['accepted'] ?? 0,
@@ -101,12 +105,12 @@ class StatsService
                     'en_retard' => $enRetard,
                 ],
                 'stock' => [
-                    'nb_matieres' => count($matieres),
+                    'nb_matieres' => $nbMatieres,
                     'alertes' => $nbAlertesStock,
                 ],
                 'satisfaction' => [
                     'note_moyenne' => $noteMoyenne,
-                    'nb_avis' => count($avis),
+                    'nb_avis' => $nbAvis,
                 ],
                 'relationnel' => [
                     'clients' => $clients,

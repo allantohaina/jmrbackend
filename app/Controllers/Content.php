@@ -13,6 +13,12 @@ class Content extends ResourceController
     public function index(): ResponseInterface
     {
         try {
+            $cached = cache('site_content');
+            if ($cached !== null) {
+                $this->response->setHeader('Cache-Control', 'public, max-age=300');
+                return $this->respond($cached);
+            }
+
             $db = \Config\Database::connect();
             $builder = $db->table('site_content');
             $rows = $builder->select('key, value')->get()->getResultArray();
@@ -20,6 +26,10 @@ class Content extends ResourceController
             foreach ($rows as $row) {
                 $result[$row['key']] = $row['value'];
             }
+
+            cache('site_content', $result, 300);
+            $this->response->setHeader('Cache-Control', 'public, max-age=300');
+
             return $this->respond($result);
         } catch (Throwable $e) {
             log_message('error', 'Content index error: ' . $e->getMessage());
@@ -45,6 +55,8 @@ class Content extends ResourceController
             } else {
                 $builder->insert(['key' => $key, 'value' => $value, 'updated_at' => date('Y-m-d H:i:s')]);
             }
+
+            cache()->delete('site_content');
 
             return $this->respond(['key' => $key, 'value' => $value]);
         } catch (Throwable $e) {

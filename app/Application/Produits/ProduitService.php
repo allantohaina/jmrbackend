@@ -16,18 +16,36 @@ class ProduitService
 
     public function list(): Result
     {
-        return Result::ok(['data' => $this->model->findAllWithDecoded()]);
+        $cached = cache('produits_list');
+        if ($cached !== null) {
+            return Result::ok(['data' => $cached]);
+        }
+        $rows = $this->model->findAllWithDecoded();
+        cache('produits_list', $rows, 300);
+        return Result::ok(['data' => $rows]);
     }
 
     public function categories(): Result
     {
-        return Result::ok(['data' => $this->model->listCategories()]);
+        $cached = cache('produits_categories');
+        if ($cached !== null) {
+            return Result::ok(['data' => $cached]);
+        }
+        $rows = $this->model->listCategories();
+        cache('produits_categories', $rows, 300);
+        return Result::ok(['data' => $rows]);
     }
 
     public function getById(string $id): Result
     {
+        $cacheKey = 'produits_' . $id;
+        $cached = cache($cacheKey);
+        if ($cached !== null) {
+            return Result::ok(['data' => $cached]);
+        }
         $row = $this->model->findWithDecoded($id);
         if (!$row) return Result::notFound('Produit introuvable.');
+        cache($cacheKey, $row, 300);
         return Result::ok(['data' => $row]);
     }
 
@@ -39,6 +57,7 @@ class ProduitService
         if (!$this->model->insert($data)) {
             return Result::fail(['error' => 'Erreur lors de la création du produit.', 'messages' => $this->model->errors()], 422);
         }
+        $this->invalidateCache();
         $id = $this->model->getInsertID();
         return Result::created(['data' => $this->model->findWithDecoded($id)]);
     }
@@ -51,6 +70,7 @@ class ProduitService
         if (!$this->model->update($id, $data)) {
             return Result::fail(['error' => 'Erreur lors de la mise à jour du produit.', 'messages' => $this->model->errors()], 422);
         }
+        $this->invalidateCache($id);
         return Result::ok(['data' => $this->model->findWithDecoded($id)]);
     }
 
@@ -59,6 +79,16 @@ class ProduitService
         $existing = $this->model->find($id);
         if (!$existing) return Result::notFound('Produit introuvable.');
         $this->model->delete($id);
+        $this->invalidateCache($id);
         return Result::ok(['message' => 'Produit supprimé.']);
+    }
+
+    private function invalidateCache(?string $id = null): void
+    {
+        cache()->delete('produits_list');
+        cache()->delete('produits_categories');
+        if ($id !== null) {
+            cache()->delete('produits_' . $id);
+        }
     }
 }
