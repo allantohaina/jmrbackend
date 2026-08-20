@@ -76,7 +76,14 @@ class ExportService
 
     private function line(array $fields): string
     {
-        $escaped = array_map(static fn($v) => '"' . str_replace('"', '""', (string)$v) . '"', $fields);
+        $escaped = array_map(static function ($v) {
+            $value = (string)$v;
+            $trimmed = ltrim($value, " \t");
+            if (preg_match('/^[\x09\x0A\x0D]/', $value) || ($trimmed !== '' && in_array($trimmed[0], ['=', '+', '-', '@'], true))) {
+                $value = "'" . $value;
+            }
+            return '"' . str_replace('"', '""', $value) . '"';
+        }, $fields);
         return implode(';', $escaped) . "\r\n";
     }
 }
