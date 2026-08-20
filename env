@@ -90,7 +90,7 @@ app.forceGlobalSecureRequests = true
 # CORS
 #--------------------------------------------------------------------
 
-CORS_ALLOWED_ORIGINS = https://jmrtextile.com,https://www.jmrtextile.com
+CORS_ALLOWED_ORIGINS = https://jmrtextile.com,https://www.jmrtextile.com,https://admin.jmrtextile.com
 # CORS_ALLOWED_ORIGIN_PATTERNS =
 # CORS_ALLOWED_HEADERS = Content-Type,Authorization,X-Requested-With
 # CORS_EXPOSED_HEADERS =
