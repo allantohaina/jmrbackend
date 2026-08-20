@@ -135,12 +135,10 @@ DELETE FROM audit_logs
     OR (entity_type = 'demande_client' AND entity_id NOT IN (SELECT id FROM demandes_client));
 
 -- =============================================================
--- 15) USER : HARD DELETE (ou remplacer par soft delete)
---    Soft delete : UPDATE users SET deleted_at = NOW() WHERE id = @user_id;
+-- 15) COMPTE UTILISATEUR
+--    Le compte est volontairement conservé : seules ses données métier sont effacées.
 -- =============================================================
--- Soft delete par défaut (convention métier : on ne supprime jamais vraiment)
-UPDATE users SET deleted_at = NOW(), updated_at = NOW() WHERE id = @user_id;
--- Si hard delete préféré : DELETE FROM users WHERE id = @user_id;
+-- Ne pas exécuter de DELETE ou UPDATE sur la table users dans ce script.
 
 SET FOREIGN_KEY_CHECKS = 1;
 
