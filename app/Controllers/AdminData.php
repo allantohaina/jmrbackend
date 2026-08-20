@@ -47,7 +47,7 @@ class AdminData extends ResourceController
 
             $tables = [
                 'attachments',
-                'bon_livraison',
+                'bons_livraison',
                 'achats',
                 'produits',
                 'notifications',
@@ -66,7 +66,13 @@ class AdminData extends ResourceController
 
             $truncated = [];
             foreach ($tables as $table) {
-                if ($db->tableExists($table)) {
+                // ConnectionInterface does not expose BaseConnection::tableExists(),
+                // though the concrete CodeIgniter connection implements it.
+                $exists = $db->query(
+                    'SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ? LIMIT 1',
+                    [$table],
+                )->getRowArray() !== null;
+                if ($exists) {
                     $db->table($table)->truncate();
                     $truncated[] = $table;
                 }

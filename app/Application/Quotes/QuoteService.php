@@ -337,7 +337,8 @@ class QuoteService
         $model = new QuoteModel();
         $isAdmin = ($role === 'admin');
         if ($userId && !$isAdmin) {
-            $userEmail = (new UserModel())->find($userId)['email'] ?? null;
+            $user = (new UserModel())->select('id, email')->find($userId);
+            $userEmail = $user['email'] ?? null;
             $quotes = $model->groupStart()
                 ->where('client_id', $userId)
                 ->orWhere('email', $userEmail)
@@ -352,18 +353,26 @@ class QuoteService
         $offset = ($page - 1) * $perPage;
         $quotes = $model->getAllQuotes($perPage, $offset);
         $total = $model->countAll();
+
         $counts = [
-            'draft' => 0, 'needs_info' => 0, 'sent' => 0, 'accepted' => 0, 'rejected' => 0, 'expired' => 0, 'pending' => 0,
+            'draft' => 0, 'needs_info' => 0, 'sent' => 0, 'accepted' => 0,
+            'rejected' => 0, 'expired' => 0, 'pending' => 0,
         ];
-        $all = $model->select('status')->where('status !=', 'draft')->findAll();
-        foreach ($all as $q) {
-            $s = (string)($q['status'] ?? 'pending');
-            if (!isset($counts[$s])) $counts[$s] = 0;
-            $counts[$s]++;
+        $db = \Config\Database::connect();
+        $rows = $db->table('quotes')
+            ->select('status, COUNT(*) AS c')
+            ->where('deleted_at IS NULL')
+            ->groupBy('status')
+            ->get()->getResultArray();
+        foreach ($rows as $r) {
+            $s = (string)($r['status'] ?? 'pending');
+            $counts[$s] = (int)($r['c'] ?? 0);
         }
         $counts['awaiting_client'] = (int)($counts['sent'] ?? 0);
+
         return Result::ok([
-            'data' => $quotes, 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'counts' => $counts,
+            'data' => $quotes, 'total' => $total, 'page' => $page,
+            'per_page' => $perPage, 'counts' => $counts,
         ]);
     }
 
