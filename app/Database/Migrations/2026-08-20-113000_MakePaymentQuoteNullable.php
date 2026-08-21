@@ -29,10 +29,16 @@ class MakePaymentQuoteNullable extends Migration
     private function setMysqlQuoteNullable(bool $nullable): void
     {
         $payments = $this->db->protectIdentifiers('payments', true);
-        $quotes = $this->db->protectIdentifiers('quotes', true);
-        // MySQL requires a foreign key to be removed before altering its column.
-        $this->db->query("ALTER TABLE {$payments} DROP FOREIGN KEY fk_payments_quote");
+        // The legacy database can use a different collation for UUID columns.
+        // Remove the optional FK only when present; recreating it after MODIFY
+        // would fail on those installations and leave the migration half-done.
+        $row = $this->db->query(
+            'SELECT COUNT(*) AS c FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?',
+            ['payments', 'fk_payments_quote']
+        )->getRowArray();
+        if ((int) ($row['c'] ?? 0) > 0) {
+            $this->db->query("ALTER TABLE {$payments} DROP FOREIGN KEY fk_payments_quote");
+        }
         $this->db->query("ALTER TABLE {$payments} MODIFY COLUMN quote_id VARCHAR(36) " . ($nullable ? 'NULL' : 'NOT NULL'));
-        $this->db->query("ALTER TABLE {$payments} ADD CONSTRAINT fk_payments_quote FOREIGN KEY (quote_id) REFERENCES {$quotes} (id) ON DELETE CASCADE ON UPDATE CASCADE");
     }
 }
