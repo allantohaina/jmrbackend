@@ -24,8 +24,11 @@ class CreateAvisProduits extends Migration
             'updated_at' => $this->timestampField(true),
         ]);
         $this->forge->addKey('id', true);
-        $this->forge->addForeignKey('produit_id', 'produits', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('user_id', 'users', 'id', 'SET NULL', 'SET NULL');
+        // Existing installations can have legacy UUID column collations. Keep
+        // these references indexed without making deployment depend on a FK
+        // definition that MySQL considers incompatible.
+        $this->forge->addKey('produit_id');
+        $this->forge->addKey('user_id');
         $this->forge->createTable('avis_produits');
     }
 

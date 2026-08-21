@@ -26,7 +26,7 @@ class CreateLiensPaiementEtPointsFidelite extends Migration
         ]);
         $this->forge->addKey('id', true);
         $this->forge->addKey('token', false, true);
-        $this->forge->addForeignKey('commande_id', 'commandes', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addKey('commande_id');
         $this->forge->createTable('liens_paiement');
 
         $this->forge->addField([
@@ -42,7 +42,7 @@ class CreateLiensPaiementEtPointsFidelite extends Migration
             'created_at' => $this->timestampField(true),
         ]);
         $this->forge->addKey('id', true);
-        $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addKey('user_id');
         $this->forge->createTable('points_fidelite');
     }
 
