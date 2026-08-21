@@ -64,4 +64,24 @@ class Content extends ResourceController
             return $this->failServerError('Erreur interne');
         }
     }
+
+    /**
+     * Removes a site-content override. Public components then fall back to their
+     * bundled default value; uploaded files are intentionally never deleted here.
+     */
+    public function remove($key = null): ResponseInterface
+    {
+        try {
+            if (!$key) return $this->failValidationErrors('ClÃ© requise');
+
+            $db = \Config\Database::connect();
+            $db->table('site_content')->where('key', $key)->delete();
+            cache()->delete('site_content');
+
+            return $this->respondDeleted(['key' => $key]);
+        } catch (Throwable $e) {
+            log_message('error', 'Content remove error: ' . $e->getMessage());
+            return $this->failServerError('Erreur interne');
+        }
+    }
 }

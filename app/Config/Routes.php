@@ -62,7 +62,8 @@ $routes->get('/', static function () {
     });
 
     $routes->group('uploads', ['filter' => 'auth'], function($routes) {
-        $routes->post('image', 'Uploads::image', ['filter' => 'ratelimit:auth']);
+        // Site and business images are only accepted from the backoffice.
+        $routes->post('image', 'Uploads::image', ['filter' => ['admin', 'ratelimit:auth']]);
         $routes->post('document', 'Uploads::document', ['filter' => 'ratelimit:auth']);
     });
 
@@ -164,6 +165,7 @@ $routes->get('/', static function () {
     // Site content (public read, admin write)
     $routes->get('content', 'Content::index');
     $routes->put('content/(:any)', 'Content::update/$1', ['filter' => ['auth', 'admin']]);
+    $routes->delete('content/(:any)', 'Content::remove/$1', ['filter' => ['auth', 'admin']]);
 
     // Production Assemblages
     $routes->group('assemblages', ['filter' => ['auth', 'staff']], function($routes) {
