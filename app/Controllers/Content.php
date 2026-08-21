@@ -15,7 +15,7 @@ class Content extends ResourceController
         try {
             $cached = cache('site_content');
             if ($cached !== null) {
-                $this->response->setHeader('Cache-Control', 'public, max-age=300');
+                $this->response->setHeader('Cache-Control', 'no-store, max-age=0');
                 return $this->respond($cached);
             }
 
@@ -28,7 +28,7 @@ class Content extends ResourceController
             }
 
             cache('site_content', $result, 300);
-            $this->response->setHeader('Cache-Control', 'public, max-age=300');
+            $this->response->setHeader('Cache-Control', 'no-store, max-age=0');
 
             return $this->respond($result);
         } catch (Throwable $e) {
