@@ -164,6 +164,9 @@ $routes->get('/', static function () {
 
     // Site content (public read, admin write)
     $routes->get('content', 'Content::index');
+    $routes->post('content/publish', 'Content::publish', ['filter' => ['auth', 'admin']]);
+    $routes->get('content/history', 'Content::history', ['filter' => ['auth', 'admin']]);
+    $routes->post('content/history/(:num)/restore', 'Content::restore/$1', ['filter' => ['auth', 'admin']]);
     $routes->put('content/(:any)', 'Content::update/$1', ['filter' => ['auth', 'admin']]);
     $routes->delete('content/(:any)', 'Content::remove/$1', ['filter' => ['auth', 'admin']]);
 
