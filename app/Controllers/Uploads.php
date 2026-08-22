@@ -34,8 +34,17 @@ class Uploads extends ResourceController
             return $this->response->setStatusCode(404)->setBody('Not Found');
         }
 
-        $path = WRITEPATH . 'uploads' . DIRECTORY_SEPARATOR . $name;
-        if (!is_file($path)) {
+        // Fichiers stockés dans WRITEPATH/uploads/images et /documents (Config/Upload) mais aussi legacy à la racine uploads/
+        $candidates = [
+            WRITEPATH . 'uploads' . DIRECTORY_SEPARATOR . $name,
+            WRITEPATH . 'uploads' . DIRECTORY_SEPARATOR . 'images' . DIRECTORY_SEPARATOR . $name,
+            WRITEPATH . 'uploads' . DIRECTORY_SEPARATOR . 'documents' . DIRECTORY_SEPARATOR . $name,
+        ];
+        $path = null;
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) { $path = $candidate; break; }
+        }
+        if ($path === null) {
             return $this->response->setStatusCode(404)->setBody('Not Found');
         }
 
