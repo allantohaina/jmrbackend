@@ -70,9 +70,7 @@ class Uploads extends ResourceController
     {
         try {
             if (! $this->validate($validationGroup)) {
-                $errors = $this->validator->getErrors();
-                log_message('error', 'Upload validation failed: ' . json_encode($errors) . ' | FILES=' . json_encode($_FILES) . ' | ini post_max=' . ini_get('post_max_size') . ' upload_max=' . ini_get('upload_max_filesize') . ' content_len=' . ($_SERVER['CONTENT_LENGTH'] ?? 'unknown'));
-                return $this->fail($errors, 422);
+                return $this->fail($this->validator->getErrors(), 422);
             }
 
             $file = $this->request->getFile('file');
