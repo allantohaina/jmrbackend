@@ -25,12 +25,17 @@ class Uploads extends ResourceController
     public function imageBase64()
     {
         try {
+            // getBody() avant getJSON() car getJSON() consomme php://input
+            $rawBody = $this->request->getBody();
             $input = $this->request->getJSON(true);
+            if (!is_array($input) || $input === []) {
+                $decoded = json_decode($rawBody, true);
+                if (is_array($decoded)) $input = $decoded;
+            }
             if (!is_array($input)) $input = [];
             $dataUrl = $input['image'] ?? $input['data'] ?? null;
             if (!is_string($dataUrl) || $dataUrl === '') {
-                $raw = $this->request->getBody();
-                log_message('error', 'Base64 Image requise: input=' . json_encode($input) . ' raw_len=' . strlen($raw) . ' raw_head=' . substr($raw, 0, 200) . ' content_type=' . ($this->request->getHeaderLine('Content-Type') ?? '') . ' content_len=' . ($_SERVER['CONTENT_LENGTH'] ?? ''));
+                log_message('error', 'Base64 Image requise: input_keys=' . json_encode(array_keys($input)) . ' raw_len=' . strlen($rawBody) . ' raw_head=' . substr($rawBody, 0, 300) . ' content_type=' . ($this->request->getHeaderLine('Content-Type') ?? '') . ' content_len=' . ($_SERVER['CONTENT_LENGTH'] ?? '') . ' post_max=' . ini_get('post_max_size'));
                 return $this->fail(['file' => 'Image requise.'], 422);
             }
             // data:image/jpeg;base64,xxxx ou base64 brut
