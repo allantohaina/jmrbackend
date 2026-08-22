@@ -103,7 +103,7 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string
      */
-    public $imageSrc = 'self';
+    public $imageSrc = ['self', 'data:', 'blob:', 'https://api.jmrtextile.com', 'https://admin.jmrtextile.com', 'https://jmrtextile.com', 'https://www.jmrtextile.com', 'https:'];
 
     /**
      * Restricts the URLs that can appear in a page's `<base>` element.
