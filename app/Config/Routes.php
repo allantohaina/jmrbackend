@@ -64,6 +64,7 @@ $routes->get('/', static function () {
     $routes->group('uploads', ['filter' => 'auth'], function($routes) {
         // Site and business images are only accepted from the backoffice.
         $routes->post('image', 'Uploads::image', ['filter' => ['admin', 'ratelimit:auth']]);
+        $routes->post('image-base64', 'Uploads::imageBase64', ['filter' => ['admin', 'ratelimit:auth']]);
         $routes->post('document', 'Uploads::document', ['filter' => 'ratelimit:auth']);
     });
 
