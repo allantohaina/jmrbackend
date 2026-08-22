@@ -35,16 +35,7 @@ class Cors extends BaseConfig
          *   - ['https://www.example.com']
          */
         'allowedOrigins' => [
-            'https://jmrtextile.com',
-            'https://www.jmrtextile.com',
-            'https://api.jmrtextile.com',
-            'https://admin.jmrtextile.com',
-            'https://worker.jmrtextile.com',
-            'http://jmrtextile.com',
-            'http://www.jmrtextile.com',
-            'http://api.jmrtextile.com',
-            'http://admin.jmrtextile.com',
-            'http://worker.jmrtextile.com',
+            '*',
         ],
 
         /**
