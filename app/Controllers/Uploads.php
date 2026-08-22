@@ -26,8 +26,11 @@ class Uploads extends ResourceController
     {
         try {
             $input = $this->request->getJSON(true);
+            if (!is_array($input)) $input = [];
             $dataUrl = $input['image'] ?? $input['data'] ?? null;
             if (!is_string($dataUrl) || $dataUrl === '') {
+                $raw = $this->request->getBody();
+                log_message('error', 'Base64 Image requise: input=' . json_encode($input) . ' raw_len=' . strlen($raw) . ' raw_head=' . substr($raw, 0, 200) . ' content_type=' . ($this->request->getHeaderLine('Content-Type') ?? '') . ' content_len=' . ($_SERVER['CONTENT_LENGTH'] ?? ''));
                 return $this->fail(['file' => 'Image requise.'], 422);
             }
             // data:image/jpeg;base64,xxxx ou base64 brut
