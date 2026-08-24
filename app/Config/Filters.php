@@ -82,6 +82,7 @@ class Filters extends BaseFilters
             'cors',
         ],
         'after' => [
+            'cors',
             'secureheaders',
         ],
     ];
