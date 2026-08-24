@@ -269,10 +269,11 @@ class Users extends ResourceController
             ]
         );
 
-        $unknown = new UnknownException(lang('Common.errors.unexpected'), 0, $e);
-
+        // Diagnostic temporaire pour login 500
         return $this->respond([
-            'error' => $unknown->getMessage(),
+            'error' => $e->getMessage(),
+            'type' => $e::class,
+            'trace' => explode("\n", $e->getTraceAsString()),
         ], 500);
     }
 }

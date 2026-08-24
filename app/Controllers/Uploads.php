@@ -72,15 +72,49 @@ class Uploads extends ResourceController
     {
         try {
             if (! $this->validate($validationGroup)) {
+                // Diagnostic temporaire : détaille les fichiers reçus pour corriger 422 "Image requise"
                 $files = $this->request->getFiles();
                 $fileKeys = $files ? array_keys($files) : [];
+                $allFiles = [];
+                foreach ($files as $k => $v) {
+                    if (is_array($v)) {
+                        foreach ($v as $sub) {
+                            if ($sub instanceof \CodeIgniter\HTTP\Files\UploadedFile) {
+                                $allFiles[$k . '[]'] = [
+                                    'clientName' => $sub->getClientName(),
+                                    'size' => $sub->getSize(),
+                                    'mime' => $sub->getClientMimeType(),
+                                    'error' => $sub->getError(),
+                                    'isValid' => $sub->isValid(),
+                                    'tempName' => $sub->getTempName(),
+                                    'isUploaded' => $sub->getTempName() ? is_uploaded_file($sub->getTempName()) : false,
+                                ];
+                            }
+                        }
+                    } elseif ($v instanceof \CodeIgniter\HTTP\Files\UploadedFile) {
+                        $allFiles[$k] = [
+                            'clientName' => $v->getClientName(),
+                            'size' => $v->getSize(),
+                            'mime' => $v->getClientMimeType(),
+                            'error' => $v->getError(),
+                            'isValid' => $v->isValid(),
+                            'tempName' => $v->getTempName(),
+                            'isUploaded' => $v->getTempName() ? is_uploaded_file($v->getTempName()) : false,
+                        ];
+                    }
+                }
+                $rawFiles = $_FILES ?? [];
+                $rawKeys = array_keys($rawFiles);
                 $debug = [
                     'validatorErrors' => $this->validator->getErrors(),
                     'fileKeys' => $fileKeys,
-                    'rawKeys' => array_keys($_FILES ?? []),
+                    'rawKeys' => $rawKeys,
+                    'allFiles' => $allFiles,
+                    'rawFilesMeta' => array_map(fn($f) => ['name'=>$f['name']??null,'type'=>$f['type']??null,'size'=>$f['size']??null,'error'=>$f['error']??null,'tmp_name'=>$f['tmp_name']??null], $rawFiles),
                     'contentType' => $this->request->getHeaderLine('Content-Type'),
+                    'method' => $this->request->getMethod(),
                 ];
-                log_message('error', 'Upload 422 debug: ' . json_encode($debug));
+                log_message('error', 'Upload diagnostic 422: ' . json_encode($debug));
                 return $this->fail(array_merge($this->validator->getErrors(), ['_debug' => $debug]), 422);
             }
 
