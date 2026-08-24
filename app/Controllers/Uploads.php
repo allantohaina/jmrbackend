@@ -71,13 +71,10 @@ class Uploads extends ResourceController
     private function handleUpload(string $type, string $validationGroup)
     {
         try {
-            if (! $this->validate($validationGroup)) {
-                return $this->fail($this->validator->getErrors(), 422);
-            }
-
+            // Récupération directe du fichier sans validation CodeIgniter
             $file = $this->request->getFile('file');
             if ($file === null || !$file->isValid()) {
-                return $this->fail(['file' => lang('Upload.errors.invalid_upload')], 400);
+                return $this->fail(['file' => 'Fichier requis ou invalide'], 422);
             }
 
             $guard = new UploadGuard();
