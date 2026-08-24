@@ -171,9 +171,9 @@ $routes->get('/', static function () {
         $routes->get('projects', 'History::projects');
     });
 
-    $routes->group('uploads', function($routes) {
+    $routes->group('uploads', ['filter' => 'auth'], function($routes) {
         // Site and business images are only accepted from the backoffice.
-        $routes->post('image', 'Uploads::image', ['filter' => 'ratelimit:auth']);
+        $routes->post('image', 'Uploads::image', ['filter' => ['admin', 'ratelimit:auth']]);
         $routes->post('document', 'Uploads::document', ['filter' => 'ratelimit:auth']);
     });
 

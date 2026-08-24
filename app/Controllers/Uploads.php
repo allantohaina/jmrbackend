@@ -71,55 +71,52 @@ class Uploads extends ResourceController
     private function handleUpload(string $type, string $validationGroup)
     {
         try {
-            if (! $this->validate($validationGroup)) {
-                // Diagnostic temporaire : détaille les fichiers reçus pour corriger 422 "Image requise"
+            // Support both 'file' (current frontend) and 'image' (legacy) field names
+            $validationGroups = [$validationGroup];
+            if ($validationGroup === 'uploadImage') {
+                $validationGroups[] = 'uploadImageAlt';
+            }
+            $validated = false;
+            $lastErrors = [];
+            foreach ($validationGroups as $group) {
+                if ($this->validate($group)) {
+                    $validated = true;
+                    break;
+                }
+                $lastErrors = $this->validator->getErrors();
+            }
+            if (!$validated) {
+                // Fallback: if validation failed due to missing 'file', try to find any file
                 $files = $this->request->getFiles();
-                $fileKeys = $files ? array_keys($files) : [];
-                $allFiles = [];
-                foreach ($files as $k => $v) {
-                    if (is_array($v)) {
-                        foreach ($v as $sub) {
-                            if ($sub instanceof \CodeIgniter\HTTP\Files\UploadedFile) {
-                                $allFiles[$k . '[]'] = [
-                                    'clientName' => $sub->getClientName(),
-                                    'size' => $sub->getSize(),
-                                    'mime' => $sub->getClientMimeType(),
-                                    'error' => $sub->getError(),
-                                    'isValid' => $sub->isValid(),
-                                    'tempName' => $sub->getTempName(),
-                                    'isUploaded' => $sub->getTempName() ? is_uploaded_file($sub->getTempName()) : false,
-                                ];
-                            }
-                        }
-                    } elseif ($v instanceof \CodeIgniter\HTTP\Files\UploadedFile) {
-                        $allFiles[$k] = [
-                            'clientName' => $v->getClientName(),
-                            'size' => $v->getSize(),
-                            'mime' => $v->getClientMimeType(),
-                            'error' => $v->getError(),
-                            'isValid' => $v->isValid(),
-                            'tempName' => $v->getTempName(),
-                            'isUploaded' => $v->getTempName() ? is_uploaded_file($v->getTempName()) : false,
-                        ];
+                if (!empty($files)) {
+                    $hasFile = isset($files['file']) || isset($files['image']);
+                    if ($hasFile) {
+                        // File present but validation failed for other reason (size/mime) — return original errors
+                        return $this->fail($lastErrors, 422);
                     }
                 }
-                $rawFiles = $_FILES ?? [];
-                $rawKeys = array_keys($rawFiles);
-                $debug = [
-                    'validatorErrors' => $this->validator->getErrors(),
-                    'fileKeys' => $fileKeys,
-                    'rawKeys' => $rawKeys,
-                    'allFiles' => $allFiles,
-                    'rawFilesMeta' => array_map(fn($f) => ['name'=>$f['name']??null,'type'=>$f['type']??null,'size'=>$f['size']??null,'error'=>$f['error']??null,'tmp_name'=>$f['tmp_name']??null], $rawFiles),
-                    'contentType' => $this->request->getHeaderLine('Content-Type'),
-                    'method' => $this->request->getMethod(),
-                ];
-                log_message('error', 'Upload diagnostic 422: ' . json_encode($debug));
-                return $this->fail(array_merge($this->validator->getErrors(), ['_debug' => $debug]), 422);
+                return $this->fail($lastErrors, 422);
             }
 
-            $file = $this->request->getFile('file');
-            if ($file === null) {
+            $file = $this->request->getFile('file') ?? $this->request->getFile('image');
+            if ($file === null || !$file->isValid()) {
+                // Fallback: try to find any uploaded file regardless of field name
+                $files = $this->request->getFiles();
+                if (!empty($files)) {
+                    $first = reset($files);
+                    if ($first instanceof \CodeIgniter\HTTP\Files\UploadedFile && $first->isValid()) {
+                        $file = $first;
+                    } elseif (is_array($first)) {
+                        foreach ($first as $sub) {
+                            if ($sub instanceof \CodeIgniter\HTTP\Files\UploadedFile && $sub->isValid()) {
+                                $file = $sub;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if ($file === null || !$file->isValid()) {
                 return $this->fail(['file' => lang('Upload.errors.invalid_upload')], 400);
             }
 

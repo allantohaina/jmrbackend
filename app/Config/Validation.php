@@ -60,6 +60,20 @@ class Validation extends BaseConfig
         ],
     ];
 
+    public array $uploadImageAlt = [
+        'image' => 'uploaded[image]|max_size[image,5120]|ext_in[image,jpg,jpeg,png,webp,avif,heic,heif]|mime_in[image,image/jpg,image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif]|is_image[image]',
+    ];
+
+    public array $uploadImageAlt_errors = [
+        'image' => [
+            'uploaded' => 'Validation.upload.image.uploaded',
+            'max_size' => 'Validation.upload.image.max_size',
+            'ext_in' => 'Validation.upload.image.ext_in',
+            'mime_in' => 'Validation.upload.image.mime_in',
+            'is_image' => 'Validation.upload.image.is_image',
+        ],
+    ];
+
     /**
      * Document upload validation.
      * Input name: file
