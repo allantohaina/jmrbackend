@@ -36,6 +36,110 @@ $routes->get('/', static function () {
         $routes->options('users/logout', static function () {
             return service('response')->setStatusCode(204);
         });
+        // Whitelisted CORS preflight — explicit, no catch-all
+        $routes->options('users/register', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('users/refresh', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('users/worker', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('users/import-csv', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('users/clients-revenue', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('users/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('users/(:segment)/privilege', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('notifications', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('notifications/read-all', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('notifications/(:segment)/read', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quotes', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quotes/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quotes/(:segment)/status', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quotes/(:segment)/sign', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quotes/share/(:any)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quotes/notifications', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quotes/notifications/(:segment)/read', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quotes/(:segment)/notify', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quotes/(:segment)/confirm', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quotes/(:segment)/convert-to-commande', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quotes/(:segment)/payments', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('produits', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('produits/categories', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('produits/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('produits/(:segment)/avis', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('commandes', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('commandes/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('commandes/(:segment)/sign', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('commandes/(:segment)/recu', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('commandes/(:segment)/recu.pdf', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('commandes/(:segment)/lien-paiement', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('commandes/(:segment)/qr-data', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('matieres', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('matieres/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('matieres/alertes', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('matieres/mouvements', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('avis', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('avis/(:segment)/statut', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('exports/devis', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('exports/commandes', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('exports/paiements', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('moi/points', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('demandes-client', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('demandes-client/pending-count', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('demandes-client/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('demandes-client/(:segment)/refuse', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('push-subscriptions', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('push-subscriptions/test', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('push-subscriptions/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quote-checkpoints', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quote-checkpoints/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quote-checkpoints/(:segment)/validate', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quote-addons', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quote-addons/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('quote-addons/(:segment)/status', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('payments', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('payments/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('payments/(:segment)/status', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('assemblages', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('assemblages/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('achats', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('achats/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('bon-livraison', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('bon-livraison/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('bon-livraison/(:segment)/sign', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('checklists', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('checklists/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('checklists/(:segment)/value', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('checklists/initialize', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('checklists/initialize-command', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('checklists/initialize-delivery', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('checklists/project/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('workflows', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('workflows/kanban', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('workflows/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('workflows/(:segment)/transition', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('stats/dashboard', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('attachments', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('attachments/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('uploads/image', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('uploads/document', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('content', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('content/publish', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('content/history', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('content/history/(:num)/restore', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('content/(:any)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/bans', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/bans/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/bans/user/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/blacklist', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/blacklist/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/truncate', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/history/audit', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/history/tokens', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/history/projects', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/reset-password', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/users', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('public/suivi-commande', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('public/lien-paiement/(:any)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('public/lien-paiement/(:any)/payer', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('legal/consent', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('legal/data-request', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('exchange-rates', static function () { return service('response')->setStatusCode(204); });
 
     $routes->group('legal', function($routes) {
         $routes->post('consent', 'Legal::consent');
@@ -280,12 +384,6 @@ $routes->get('/', static function () {
     // Admin reset (protected by secret key + ratelimit, not auth)
     $routes->post('admin/reset-password', 'AdminReset::resetPassword', ['filter' => 'ratelimit:auth']);
     $routes->get('admin/users', 'AdminReset::listUsers', ['filter' => 'ratelimit:auth']);
-
-    // Global CORS preflight — handles OPTIONS for all /api/* endpoints without requiring per-route OPTIONS.
-    // Must remain outside auth filters and inside the api group.
-    $routes->options('(:any)', static function () {
-        return service('response')->setStatusCode(204);
-    });
 });
 
     // Public file serving for uploaded reference files (images / PDF / CSV)
