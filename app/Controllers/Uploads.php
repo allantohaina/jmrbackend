@@ -71,6 +71,29 @@ class Uploads extends ResourceController
     private function handleUpload(string $type, string $validationGroup)
     {
         try {
+            // Diagnostic minimal avant validation
+            $contentType = $this->request->getHeaderLine('Content-Type');
+            $hasFiles = isset($_FILES) && is_array($_FILES);
+            $hasFileField = isset($_FILES['file']);
+            $fileError = $hasFileField ? ($_FILES['file']['error'] ?? 'N/A') : 'N/A';
+            $fileSize = $hasFileField ? ($_FILES['file']['size'] ?? 'N/A') : 'N/A';
+            $fileName = $hasFileField ? ($_FILES['file']['name'] ?? 'N/A') : 'N/A';
+            $fileType = $hasFileField ? ($_FILES['file']['type'] ?? 'N/A') : 'N/A';
+            $uploadMaxFilesize = ini_get('upload_max_filesize');
+            $postMaxSize = ini_get('post_max_size');
+            $fileUploads = ini_get('file_uploads');
+
+            log_message('info', "UPLOAD DIAGNOSTIC - Content-Type: {$contentType}");
+            log_message('info', "UPLOAD DIAGNOSTIC - \$_FILES exists: " . ($hasFiles ? 'yes' : 'no'));
+            log_message('info', "UPLOAD DIAGNOSTIC - \$_FILES['file'] exists: " . ($hasFileField ? 'yes' : 'no'));
+            log_message('info', "UPLOAD DIAGNOSTIC - \$_FILES['file']['error']: {$fileError}");
+            log_message('info', "UPLOAD DIAGNOSTIC - \$_FILES['file']['size']: {$fileSize}");
+            log_message('info', "UPLOAD DIAGNOSTIC - \$_FILES['file']['name']: {$fileName}");
+            log_message('info', "UPLOAD DIAGNOSTIC - \$_FILES['file']['type']: {$fileType}");
+            log_message('info', "UPLOAD DIAGNOSTIC - upload_max_filesize: {$uploadMaxFilesize}");
+            log_message('info', "UPLOAD DIAGNOSTIC - post_max_size: {$postMaxSize}");
+            log_message('info', "UPLOAD DIAGNOSTIC - file_uploads: {$fileUploads}");
+
             if (! $this->validate($validationGroup)) {
                 return $this->fail($this->validator->getErrors(), 422);
             }

@@ -114,5 +114,7 @@ class Filters extends BaseFilters
     public array $filters = [
         'connectiontrace' => ['before' => ['api/*'], 'after' => ['api/*']],
         'firewall' => ['before' => ['api/*']],
+        'invalidchars' => ['except' => ['api/uploads/*']], // Exclure les routes d'upload pour ne pas corrompre les données binaires multipart
+        'honeypot' => ['except' => ['api/uploads/*']], // Exclure les routes d'upload pour éviter les interférences avec POST multipart
     ];
 }
