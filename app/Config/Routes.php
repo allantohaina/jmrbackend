@@ -24,9 +24,6 @@ $routes->get('/', static function () {
 
         $routes->post('users/register', 'Users::register', ['filter' => 'ratelimit:auth']);
         $routes->post('users/login', 'Users::login', ['filter' => 'ratelimit:login']);
-        $routes->options('users/login', static function () {
-            return service('response')->setStatusCode(204);
-        });
         $routes->post('users/refresh', 'Users::refresh', ['filter' => 'ratelimit:auth']);
         $routes->post('users/logout', 'Users::logout', ['filter' => 'ratelimit:auth']);
 
@@ -273,6 +270,11 @@ $routes->get('/', static function () {
     // Admin reset (protected by secret key + ratelimit, not auth)
     $routes->post('admin/reset-password', 'AdminReset::resetPassword', ['filter' => 'ratelimit:auth']);
     $routes->get('admin/users', 'AdminReset::listUsers', ['filter' => 'ratelimit:auth']);
+
+    // Catch-all OPTIONS for CORS preflight - must be last in api group
+    $routes->options('(:any)', static function () {
+        return service('response')->setStatusCode(204);
+    });
 });
 
     // Public file serving for uploaded reference files (images / PDF / CSV)
