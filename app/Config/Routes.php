@@ -12,10 +12,6 @@ $routes->get('/', static function () {
 
     // Public routes (no authentication required)
     $routes->group('api', ['namespace' => 'App\Controllers'], function($routes) {
-        $routes->options('(:any)', static function () {
-            return service('response')->setStatusCode(204);
-        });
-
         $routes->get('exchange-rates', 'ExchangeRate::index');
 
         // Suivi de commande public + lien de paiement public
