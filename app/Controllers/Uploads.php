@@ -71,31 +71,6 @@ class Uploads extends ResourceController
     private function handleUpload(string $type, string $validationGroup)
     {
         try {
-            // DIAG temporaire AVANT validation — où disparaît file ?
-            $diagFiles = $this->request->getFiles();
-            $diagFile = $this->request->getFile('file');
-            $diagRawKeys = array_keys($_FILES ?? []);
-            $diagGetFilesKeys = $diagFiles ? array_keys($diagFiles) : [];
-            $diagGetFile = $diagFile ? [
-                'clientName' => $diagFile->getClientName(),
-                'size' => $diagFile->getSize(),
-                'mime' => $diagFile->getClientMimeType(),
-                'error' => $diagFile->getError(),
-                'isValid' => $diagFile->isValid(),
-                'tempName' => $diagFile->getTempName(),
-            ] : null;
-            $diagIni = [
-                'file_uploads' => ini_get('file_uploads'),
-                'upload_max_filesize' => ini_get('upload_max_filesize'),
-                'post_max_size' => ini_get('post_max_size'),
-                'max_file_uploads' => ini_get('max_file_uploads'),
-                'upload_tmp_dir' => ini_get('upload_tmp_dir') ?: sys_get_temp_dir(),
-                'tmp_dir_writable' => is_writable(ini_get('upload_tmp_dir') ?: sys_get_temp_dir()) ? 'yes' : 'no',
-                'writable_uploads_writable' => is_writable(WRITEPATH . 'uploads') ? 'yes' : 'no',
-                'writable_uploads_images_writable' => is_writable(WRITEPATH . 'uploads/images') ? 'yes' : 'no',
-            ];
-            log_message('error', 'Upload DIAG before validate: rawKeys='.json_encode($diagRawKeys).' getFilesKeys='.json_encode($diagGetFilesKeys).' getFile='.json_encode($diagGetFile).' ini='.json_encode($diagIni).' contentType='.$this->request->getHeaderLine('Content-Type'));
-
             if (! $this->validate($validationGroup)) {
                 return $this->fail($this->validator->getErrors(), 422);
             }

@@ -86,7 +86,13 @@ class UploadGuard
     private function ensureDirectory(string $path): void
     {
         if (!is_dir($path)) {
-            mkdir($path, 0755, true);
+            if (!mkdir($path, 0755, true) && !is_dir($path)) {
+                log_message('error', 'UploadGuard: impossible de créer le répertoire ' . $path);
+                throw new \RuntimeException('Impossible de créer le répertoire de stockage.');
+            }
+        }
+        if (!is_writable($path)) {
+            log_message('error', 'UploadGuard: répertoire non inscriptible ' . $path);
         }
     }
 }
