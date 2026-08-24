@@ -15,6 +15,9 @@ class AuthContextService
         $jwt = new JWTLibrary();
 
         $authHeader = $request->getHeaderLine('Authorization');
+        if (!$authHeader) {
+            $authHeader = $request->getHeaderLine('X-Authorization');
+        }
         if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
             return Result::unauthorized(['error' => lang('Auth.token.missing')]);
         }

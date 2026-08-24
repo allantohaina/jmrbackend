@@ -280,6 +280,12 @@ $routes->get('/', static function () {
     // Admin reset (protected by secret key + ratelimit, not auth)
     $routes->post('admin/reset-password', 'AdminReset::resetPassword', ['filter' => 'ratelimit:auth']);
     $routes->get('admin/users', 'AdminReset::listUsers', ['filter' => 'ratelimit:auth']);
+
+    // Global CORS preflight — handles OPTIONS for all /api/* endpoints without requiring per-route OPTIONS.
+    // Must remain outside auth filters and inside the api group.
+    $routes->options('(:any)', static function () {
+        return service('response')->setStatusCode(204);
+    });
 });
 
     // Public file serving for uploaded reference files (images / PDF / CSV)

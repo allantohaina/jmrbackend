@@ -92,7 +92,7 @@ app.forceGlobalSecureRequests = true
 
 CORS_ALLOWED_ORIGINS = https://jmrtextile.com,https://www.jmrtextile.com,https://api.jmrtextile.com,https://admin.jmrtextile.com,https://worker.jmrtextile.com,http://jmrtextile.com,http://www.jmrtextile.com,http://api.jmrtextile.com,http://admin.jmrtextile.com,http://worker.jmrtextile.com
 # CORS_ALLOWED_ORIGIN_PATTERNS =
-# CORS_ALLOWED_HEADERS = Content-Type,Authorization,X-Requested-With
+# CORS_ALLOWED_HEADERS = Content-Type,Authorization,X-Authorization,X-Requested-With,Accept
 # CORS_EXPOSED_HEADERS =
 # CORS_ALLOWED_METHODS = GET,POST,PUT,DELETE,OPTIONS
 # CORS_SUPPORTS_CREDENTIALS = true
