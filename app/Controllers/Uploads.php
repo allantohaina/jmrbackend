@@ -71,51 +71,11 @@ class Uploads extends ResourceController
     private function handleUpload(string $type, string $validationGroup)
     {
         try {
-            // Support both 'file' (current frontend) and 'image' (legacy) field names
-            $validationGroups = [$validationGroup];
-            if ($validationGroup === 'uploadImage') {
-                $validationGroups[] = 'uploadImageAlt';
-            }
-            $validated = false;
-            $lastErrors = [];
-            foreach ($validationGroups as $group) {
-                if ($this->validate($group)) {
-                    $validated = true;
-                    break;
-                }
-                $lastErrors = $this->validator->getErrors();
-            }
-            if (!$validated) {
-                // Fallback: if validation failed due to missing 'file', try to find any file
-                $files = $this->request->getFiles();
-                if (!empty($files)) {
-                    $hasFile = isset($files['file']) || isset($files['image']);
-                    if ($hasFile) {
-                        // File present but validation failed for other reason (size/mime) — return original errors
-                        return $this->fail($lastErrors, 422);
-                    }
-                }
-                return $this->fail($lastErrors, 422);
+            if (! $this->validate($validationGroup)) {
+                return $this->fail($this->validator->getErrors(), 422);
             }
 
-            $file = $this->request->getFile('file') ?? $this->request->getFile('image');
-            if ($file === null || !$file->isValid()) {
-                // Fallback: try to find any uploaded file regardless of field name
-                $files = $this->request->getFiles();
-                if (!empty($files)) {
-                    $first = reset($files);
-                    if ($first instanceof \CodeIgniter\HTTP\Files\UploadedFile && $first->isValid()) {
-                        $file = $first;
-                    } elseif (is_array($first)) {
-                        foreach ($first as $sub) {
-                            if ($sub instanceof \CodeIgniter\HTTP\Files\UploadedFile && $sub->isValid()) {
-                                $file = $sub;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
+            $file = $this->request->getFile('file');
             if ($file === null || !$file->isValid()) {
                 return $this->fail(['file' => lang('Upload.errors.invalid_upload')], 400);
             }

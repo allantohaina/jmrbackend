@@ -30,7 +30,7 @@ class UserService
                 'spamgourmet.com', 'mintemail.com',
             ];
             $emailValidator = new EmailValidator([
-                'checkMxRecords' => false,
+                'checkMxRecords' => true,
                 'checkDisposableEmail' => true,
                 'LocalDisposableOnly' => true,
                 'disposableList' => $disposableDomains,
