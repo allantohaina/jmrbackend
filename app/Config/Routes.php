@@ -24,6 +24,9 @@ $routes->get('/', static function () {
 
         $routes->post('users/register', 'Users::register', ['filter' => 'ratelimit:auth']);
         $routes->post('users/login', 'Users::login', ['filter' => 'ratelimit:login']);
+        $routes->options('users/login', static function () {
+            return service('response')->setStatusCode(204);
+        });
         $routes->post('users/refresh', 'Users::refresh', ['filter' => 'ratelimit:auth']);
         $routes->post('users/logout', 'Users::logout', ['filter' => 'ratelimit:auth']);
 
