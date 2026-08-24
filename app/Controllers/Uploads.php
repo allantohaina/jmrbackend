@@ -34,8 +34,19 @@ class Uploads extends ResourceController
             return $this->response->setStatusCode(404)->setBody('Not Found');
         }
 
-        $path = WRITEPATH . 'uploads' . DIRECTORY_SEPARATOR . $name;
-        if (!is_file($path)) {
+        $candidates = [
+            WRITEPATH . 'uploads' . DIRECTORY_SEPARATOR . $name,
+            WRITEPATH . 'uploads' . DIRECTORY_SEPARATOR . 'images' . DIRECTORY_SEPARATOR . $name,
+            WRITEPATH . 'uploads' . DIRECTORY_SEPARATOR . 'documents' . DIRECTORY_SEPARATOR . $name,
+        ];
+        $path = null;
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                $path = $candidate;
+                break;
+            }
+        }
+        if ($path === null) {
             return $this->response->setStatusCode(404)->setBody('Not Found');
         }
 
@@ -61,7 +72,16 @@ class Uploads extends ResourceController
     {
         try {
             if (! $this->validate($validationGroup)) {
-                return $this->fail($this->validator->getErrors(), 422);
+                $files = $this->request->getFiles();
+                $fileKeys = $files ? array_keys($files) : [];
+                $debug = [
+                    'validatorErrors' => $this->validator->getErrors(),
+                    'fileKeys' => $fileKeys,
+                    'rawKeys' => array_keys($_FILES ?? []),
+                    'contentType' => $this->request->getHeaderLine('Content-Type'),
+                ];
+                log_message('error', 'Upload 422 debug: ' . json_encode($debug));
+                return $this->fail(array_merge($this->validator->getErrors(), ['_debug' => $debug]), 422);
             }
 
             $file = $this->request->getFile('file');
