@@ -593,7 +593,7 @@ class UserService
         $model = new RefreshTokenModel();
         $token = bin2hex(random_bytes(32));
         $hash = hash('sha256', $token);
-        $expiresAt = time() + (int) (getenv('JWT_REFRESH_TTL') ?: 60 * 60 * 24 * 30);
+        $expiresAt = time() + (int) (getenv('JWT_REFRESH_TTL') ?: 60 * 60 * 24 * 7);
         $id = $this->uuidV4();
 
         // Handle CLIRequest which may not have all methods

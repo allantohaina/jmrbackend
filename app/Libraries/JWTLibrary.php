@@ -33,7 +33,7 @@ class JWTLibrary
         ];
 
         $now = time();
-        $ttl = (int) ($options['ttl'] ?? 60 * 60 * 24);
+        $ttl = (int) ($options['ttl'] ?? getenv('JWT_TTL') ?: 60 * 60 * 24 * 7);
 
         $payload['iss'] = $options['iss'] ?? $this->issuer;
         $payload['aud'] = $options['aud'] ?? $this->audience;
