@@ -59,13 +59,22 @@ class UserService
 
         $email = $input['email'] ?? null;
 
+        // Support age (nouveau) -> conversion en birth_date pour compat DB
+        $birthDate = $input['birth_date'] ?? null;
+        if (empty($birthDate) && isset($input['age']) && $input['age'] !== '' && $input['age'] !== null) {
+            $ageInt = (int) $input['age'];
+            if ($ageInt >= 1 && $ageInt <= 120) {
+                $birthDate = date('Y-m-d', strtotime("-{$ageInt} years"));
+            }
+        }
+
         $data = [
             'email' => $email,
             'password' => $input['password'] ?? null,
             'first_name' => $input['first_name'] ?? null,
             'last_name' => $input['last_name'] ?? null,
             'phone' => $input['phone'] ?? null,
-            'birth_date' => $input['birth_date'] ?? null,
+            'birth_date' => $birthDate,
             'country' => $input['country'] ?? null,
             'address' => $input['address'] ?? null,
             'role' => 'user',
