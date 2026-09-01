@@ -117,7 +117,6 @@ class QuoteModel extends Model
     public function getAllQuotes(int $limit = 0, int $offset = 0): array
     {
         $this->select('id, name, email, phone, message, category, status, amount, deposit_amount, balance_amount, deposit_paid, balance_paid, request_type, modify_code, created_at, updated_at');
-        $this->where('status !=', 'draft');
         if ($limit > 0) {
             return $this->limit($limit, $offset)->findAll();
         }
@@ -125,12 +124,11 @@ class QuoteModel extends Model
     }
 
     /**
-     * Get total count of quotes (excluding client drafts)
+     * Get total count of quotes
      */
     public function countAll(): int
     {
         $this->select('id');
-        $this->where('status !=', 'draft');
         return $this->countAllResults();
     }
 }
