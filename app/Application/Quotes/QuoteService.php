@@ -315,6 +315,12 @@ class QuoteService
         if ($quantite > 1 && $prixUnitaire == 0 && ($quote['amount'] ?? 0) > 0) {
             $prixUnitaire = (float)$quote['amount'] / $quantite;
         }
+        $conso = (float)($extra['conso_tissu_unitaire'] ?? $quote['conso_tissu_unitaire'] ?? 0);
+        $tauxChute = (float)($extra['taux_chute_pct'] ?? $quote['taux_chute_pct'] ?? 0);
+        $quantiteTissu = 0;
+        if ($conso > 0 && $quantite > 0) {
+            $quantiteTissu = round($conso * $quantite * (1 + $tauxChute/100), 2);
+        }
         $commandeData = [
             'cotation_id' => $quoteId,
             'client_id' => $clientId,
@@ -327,9 +333,32 @@ class QuoteService
             'date_commande' => $extra['date_commande'] ?? date('Y-m-d'),
             'date_livraison_prevue' => $extra['date_livraison_prevue'] ?? null,
             'notes' => $extra['notes'] ?? null,
+            'conso_tissu_unitaire' => $conso ?: null,
+            'taux_chute_pct' => $tauxChute ?: null,
+            'quantite_tissu_necessaire' => $quantiteTissu ?: null,
+            'admin_signature_name' => $quote['admin_signature_name'] ?? null,
+            'admin_signature_at' => $quote['admin_signature_at'] ?? null,
         ];
         $service = new CommandeService();
-        return $service->create($commandeData);
+        $result = $service->create($commandeData);
+        if ($result->isSuccess()) {
+            // emboîtement : devis passe en production + lie paiements à la commande
+            $payload = $result->getPayload();
+            $cmdId = $payload['data']['id'] ?? $payload['id'] ?? null;
+            if ($cmdId) {
+                // update quote status
+                $qm = new QuoteModel();
+                $qm->update($quoteId, ['status' => 'production']);
+                // lier paiements existants à la commande
+                try {
+                    $pm = new \App\Models\PaymentModel();
+                    $pm->where('quote_id', $quoteId)->set(['commande_id' => $cmdId])->update();
+                } catch (\Throwable $e) {
+                    log_message('error', 'Failed to link payments to commande '.$cmdId.': '.$e->getMessage());
+                }
+            }
+        }
+        return $result;
     }
 
     public function list(IncomingRequest $request, ?string $userId = null, ?string $role = null): Result
@@ -498,7 +527,8 @@ class QuoteService
         $amount = (float)($quote['amount'] ?? 0);
         if ($amount <= 0) return;
 
-        $depositAmount = round($amount * 0.5, 2);
+        $depositAmount = round($amount * 0.30, 2);
+        $balanceAmount = round($amount - $depositAmount, 2);
 
         $paymentModel = new \App\Models\PaymentModel();
         $existing = $paymentModel->where('quote_id', $quoteId)
@@ -506,21 +536,34 @@ class QuoteService
             ->first();
         if ($existing) return;
 
-        $paymentData = [
+        $depositData = [
             'quote_id' => $quoteId,
             'phase' => 'deposit',
             'amount' => $depositAmount,
             'status' => 'submitted',
         ];
 
-        if (!$paymentModel->insert($paymentData)) {
+        if (!$paymentModel->insert($depositData)) {
             log_message('error', 'Failed to auto-create tranche 1 for quote ' . $quoteId . ': ' . json_encode($paymentModel->errors()));
             return;
         }
 
+        // aussi tranche 2 solde 70% si inexistant
+        $existingBalance = $paymentModel->where('quote_id', $quoteId)->where('phase', 'balance')->first();
+        if (!$existingBalance) {
+            $paymentModel->insert([
+                'quote_id' => $quoteId,
+                'phase' => 'balance',
+                'amount' => $balanceAmount,
+                'status' => 'submitted',
+            ]);
+        }
+
         $model->update($quoteId, [
             'deposit_amount' => $depositAmount,
+            'balance_amount' => $balanceAmount,
             'deposit_paid' => false,
+            'balance_paid' => false,
         ]);
     }
 }

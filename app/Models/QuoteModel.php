@@ -116,7 +116,7 @@ class QuoteModel extends Model
      */
     public function getAllQuotes(int $limit = 0, int $offset = 0): array
     {
-        $this->select('id, name, email, phone, message, category, status, amount, deposit_amount, balance_amount, deposit_paid, balance_paid, request_type, modify_code, created_at, updated_at');
+        $this->select('id, name, email, phone, message, category, status, amount, deposit_amount, balance_amount, deposit_paid, balance_paid, request_type, modify_code, client_id, produit_id, quantite_commandee, conso_tissu_unitaire, taux_chute_pct, prix_unitaire_calcule, prix_total_calcule, admin_signature_name, admin_signature_at, created_at, updated_at');
         if ($limit > 0) {
             return $this->limit($limit, $offset)->findAll();
         }
