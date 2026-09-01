@@ -440,6 +440,37 @@ class QuoteService
             }
         }
 
+        // Cotation avant Devis : cohérence - une cotation doit être complète avant d'envoyer le devis
+        $cotationFields = ['conso_tissu_unitaire','taux_chute_pct','prix_matiere_par_metre','niveau_difficulte','quantite_commandee','frais_generaux_pct','cout_mo_par_piece','matiere_fournie_par'];
+        foreach ($cotationFields as $cf) {
+            if (array_key_exists($cf, $additionalData)) {
+                $updateData[$cf] = $additionalData[$cf];
+            }
+        }
+        // Essentiels impératifs pour status sent (devis envoyé)
+        if ($status === 'sent') {
+            $mustHave = [
+                'conso_tissu_unitaire' => 'Consommation tissu',
+                'prix_matiere_par_metre' => 'Prix matière',
+                'quantite_commandee' => 'Quantité commandée',
+            ];
+            $missing = [];
+            foreach ($mustHave as $k => $label) {
+                $val = $updateData[$k] ?? $quote[$k] ?? null;
+                if ($val === null || $val === '' || (float)$val <= 0) $missing[] = $label;
+            }
+            $amountVal = $updateData['amount'] ?? $quote['amount'] ?? null;
+            if (($amountVal === null || (float)$amountVal <= 0) && empty($updateData['prix_total_calcule'] ?? $quote['prix_total_calcule'] ?? null)) {
+                $missing[] = 'Montant total (prix calculé)';
+            }
+            if (!empty($missing)) {
+                return Result::fail(['error' => 'Cotation incomplète : '.implode(', ', $missing).' requis avant envoi du devis.', 'missing' => $missing], 422);
+            }
+        }
+        if ($status === 'production' && ($quote['status'] ?? '') !== 'accepted') {
+            return Result::fail(['error' => 'Le devis doit être accepté avant de lancer la production.'], 422);
+        }
+
         foreach ($additionalData as $key => $value) {
             $forbidden = ['prix_unitaire_calcule', 'prix_total_calcule', 'cout_matiere', 'cout_main_oeuvre', 'cout_frais_generaux'];
             if (in_array($key, $forbidden, true)) continue;
