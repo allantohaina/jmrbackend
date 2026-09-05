@@ -74,7 +74,22 @@ class Uploads extends ResourceController
             // Récupération directe du fichier sans validation CodeIgniter
             $file = $this->request->getFile('file');
             if ($file === null || !$file->isValid()) {
-                return $this->fail(['file' => 'Fichier requis ou invalide'], 422);
+                $code = ($file !== null && method_exists($file, 'getError')) ? (int) $file->getError() : UPLOAD_ERR_NO_FILE;
+                $detail = ($file !== null && method_exists($file, 'getErrorString')) ? (string) $file->getErrorString() : '';
+                log_message('error', 'Upload image rejeté avant contrôle: error={code} {detail} ini_upload={u} ini_post={p}', [
+                    'code' => $code,
+                    'detail' => $detail,
+                    'u' => ini_get('upload_max_filesize'),
+                    'p' => ini_get('post_max_size'),
+                ]);
+                $hint = ($code === UPLOAD_ERR_INI_SIZE || $code === UPLOAD_ERR_FORM_SIZE)
+                    ? ' Image trop lourde pour la limite PHP du serveur (augmentez upload_max_filesize/post_max_size, ex: 32M).'
+                    : '';
+                $msg = 'Fichier requis ou invalide.' . $hint;
+                if ($detail !== '') {
+                    $msg .= ' (' . $detail . ')';
+                }
+                return $this->fail(['file' => $msg, 'upload_error' => $code], 422);
             }
 
             $guard = new UploadGuard();
