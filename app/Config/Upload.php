@@ -6,7 +6,7 @@ use CodeIgniter\Config\BaseConfig;
 
 class Upload extends BaseConfig
 {
-    public int $imageMaxSizeMb = 5;
+    public int $imageMaxSizeMb = 30;
     public int $documentMaxSizeMb = 10;
 
     public array $imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'avif', 'heic', 'heif'];
