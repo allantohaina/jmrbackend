@@ -79,6 +79,21 @@ class DocumentController extends ResourceController
             $storedName = $file->getRandomName();
             $file->move($storagePath, $storedName);
 
+            // Vérification post-écriture : détecte un fichier tronqué sur
+            // disque (timeout / coupure en plein transfert) avant
+            // d'enregistrer quoi que ce soit en base.
+            $storedPath = $storagePath . $storedName;
+            clearstatcache(true, $storedPath);
+            $storedSize = is_file($storedPath) ? (int) @filesize($storedPath) : -1;
+            if ($storedSize !== $sizeBytes) {
+                @unlink($storedPath);
+                log_message('error', 'DocumentController: fichier tronqué détecté après écriture (attendu {exp} octets, disque {got}).', [
+                    'exp' => $sizeBytes,
+                    'got' => $storedSize,
+                ]);
+                return $this->fail(['file' => 'Transfert incomplet détecté (fichier tronqué). Veuillez réessayer.'], 422);
+            }
+
             $model = new DocumentModel();
             if (!$model->insert([
                 'client_id' => $clientId,

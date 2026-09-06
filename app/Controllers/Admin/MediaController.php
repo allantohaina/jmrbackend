@@ -66,6 +66,24 @@ class MediaController extends ResourceController
             $storedName = $file->getRandomName();
             $file->move($targetDir, $storedName);
 
+            // Vérification post-écriture : un fichier partiellement uploadé peut
+            // passer la validation initiale puis être tronqué sur disque
+            // (timeout / coupure en plein transfert). On compare la taille
+            // réelle sur disque à la taille déclarée, et on re-valide l'image
+            // sur le fichier stocké (pas seulement sur le tmp).
+            $storedPath = $targetDir . $storedName;
+            clearstatcache(true, $storedPath);
+            $storedSize = is_file($storedPath) ? (int) @filesize($storedPath) : -1;
+            $storedInfo = is_file($storedPath) ? @getimagesize($storedPath) : false;
+            if ($storedSize !== $sizeBytes || $storedInfo === false) {
+                @unlink($storedPath);
+                log_message('error', 'MediaController: fichier tronqué détecté après écriture (attendu {exp} octets, disque {got}).', [
+                    'exp' => $sizeBytes,
+                    'got' => $storedSize,
+                ]);
+                return $this->fail(['file' => 'Transfert incomplet détecté (fichier tronqué). Veuillez réessayer.'], 422);
+            }
+
             return $this->respondCreated([
                 'message' => 'Image publiée.',
                 'file' => [
