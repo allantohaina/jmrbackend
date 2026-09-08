@@ -140,8 +140,6 @@ $routes->get('/', static function () {
         $routes->options('legal/consent', static function () { return service('response')->setStatusCode(204); });
         $routes->options('legal/data-request', static function () { return service('response')->setStatusCode(204); });
         $routes->options('exchange-rates', static function () { return service('response')->setStatusCode(204); });
-        // TODO-DIAG: routes temporaires de diagnostic upload — à supprimer après diagnostic.
-        $routes->options('debug-upload/test', static function () { return service('response')->setStatusCode(204); });
         $routes->options('documents', static function () { return service('response')->setStatusCode(204); });
         $routes->options('documents/(:segment)/download', static function () { return service('response')->setStatusCode(204); });
         $routes->options('admin/media', static function () { return service('response')->setStatusCode(204); });
@@ -150,10 +148,6 @@ $routes->get('/', static function () {
         $routes->post('consent', 'Legal::consent');
         $routes->post('data-request', 'Legal::dataRequest');
     });
-
-    // TODO-DIAG: diagnostic upload temporaire, non protégé — à supprimer après diagnostic.
-    $routes->get('debug-upload/info', 'DebugUpload::info');
-    $routes->post('debug-upload/test', 'DebugUpload::test');
 
     // Documents clients confidentiels (stockage privé, accès via contrôleur + ownership).
     $routes->group('documents', ['filter' => 'auth'], function($routes) {

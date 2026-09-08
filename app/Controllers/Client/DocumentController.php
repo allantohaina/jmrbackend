@@ -13,16 +13,14 @@ class DocumentController extends ResourceController
 {
     protected $format = 'json';
 
-    /** Extension acceptée -> MIME réel attendu (le MIME fait foi, jamais l'extension). */
-    private const EXTENSION_MIMES = [
-        'pdf' => 'application/pdf',
-        'jpg' => 'image/jpeg',
-        'jpeg' => 'image/jpeg',
-        'png' => 'image/png',
-    ];
-
     private const ALLOWED_TYPES = ['preuve_paiement', 'devis', 'recu'];
 
+    /**
+     * Upload en FLUX BRUT (php://input) : contourne le bug CageFS
+     * (upload_tmp_dir bloqué sur /tmp, getError()=6 sur tout $_FILES).
+     * Le corps de la requête EST le fichier ; les métadonnées passent en
+     * query string / headers. Contrat de réponse JSON inchangé.
+     */
     public function upload(): ResponseInterface
     {
         try {
@@ -32,12 +30,8 @@ class DocumentController extends ResourceController
                 return $this->failUnauthorized('Authentification requise.');
             }
 
-            $file = $this->request->getFile('file');
-            if ($file === null || !$file->isValid() || $file->hasMoved()) {
-                return $this->fail(['file' => 'Fichier requis ou invalide.'], 422);
-            }
-
-            $type = strtolower((string) ($this->request->getPost('type') ?? ''));
+            // Métadonnées en query string / headers, pas dans le body (occupé par le fichier).
+            $type = strtolower((string) ($this->request->getGet('type') ?? 'preuve_paiement'));
             if (!in_array($type, self::ALLOWED_TYPES, true)) {
                 return $this->fail(['type' => 'Type de document invalide (preuve_paiement, devis, recu).'], 422);
             }
@@ -47,28 +41,13 @@ class DocumentController extends ResourceController
 
             // client_id et uploaded_by = utilisateur connecté, jamais le payload client.
             $clientId = ($actor['role'] ?? null) === 'admin'
-                ? (string) ($this->request->getPost('client_id') ?: $userId)
+                ? (string) ($this->request->getGet('client_id') ?: $userId)
                 : (string) $userId;
 
-            $devisId = $this->request->getPost('devis_id');
+            $devisId = $this->request->getGet('devis_id');
             $devisId = ($devisId === null || $devisId === '') ? null : (string) $devisId;
 
-            $extension = strtolower((string) $file->getClientExtension());
-            if (!isset(self::EXTENSION_MIMES[$extension])) {
-                return $this->fail(['file' => 'Extension non autorisée (pdf, jpg, jpeg, png uniquement).'], 422);
-            }
-
-            $sizeBytes = (int) $file->getSize();
-            if ($sizeBytes > $config->maxSizeKB * 1024) {
-                return $this->fail(['file' => 'Fichier trop volumineux (max ' . (int) ($config->maxSizeKB / 1024) . ' Mo).'], 422);
-            }
-
-            $detector = new FinfoMimeTypeDetector();
-            $tempPath = $file->getTempName();
-            $realMime = $tempPath ? $detector->detectMimeTypeFromFile($tempPath) : null;
-            if ($realMime === null || !in_array($realMime, $config->allowedMimes, true) || $realMime !== self::EXTENSION_MIMES[$extension]) {
-                return $this->fail(['file' => 'Type MIME réel non autorisé.'], 422);
-            }
+            $nomOriginal = rawurldecode($this->request->getHeaderLine('X-File-Name') ?: 'document');
 
             $storagePath = rtrim($config->storagePath, '/\\') . DIRECTORY_SEPARATOR;
             if (!is_dir($storagePath) && !mkdir($storagePath, 0750, true) && !is_dir($storagePath)) {
@@ -76,19 +55,59 @@ class DocumentController extends ResourceController
                 return $this->failServerError('Stockage indisponible.');
             }
 
-            $storedName = $file->getRandomName();
-            $file->move($storagePath, $storedName);
+            // Écriture directe dans storagePath (hors public_html), jamais dans /tmp.
+            $randomName = bin2hex(random_bytes(16));
+            $tempDestination = $storagePath . $randomName . '.tmp';
 
-            // Vérification post-écriture : détecte un fichier tronqué sur
-            // disque (timeout / coupure en plein transfert) avant
-            // d'enregistrer quoi que ce soit en base.
-            $storedPath = $storagePath . $storedName;
-            clearstatcache(true, $storedPath);
-            $storedSize = is_file($storedPath) ? (int) @filesize($storedPath) : -1;
-            if ($storedSize !== $sizeBytes) {
-                @unlink($storedPath);
-                log_message('error', 'DocumentController: fichier tronqué détecté après écriture (attendu {exp} octets, disque {got}).', [
-                    'exp' => $sizeBytes,
+            $input = @fopen('php://input', 'rb');
+            $output = @fopen($tempDestination, 'wb');
+            if (!$input || !$output) {
+                if (is_resource($input)) {
+                    fclose($input);
+                }
+                if (is_resource($output)) {
+                    fclose($output);
+                }
+                @unlink($tempDestination);
+                return $this->fail(['file' => "Impossible d'écrire le fichier."], 500);
+            }
+
+            $bytesWritten = stream_copy_to_stream($input, $output);
+            fclose($input);
+            fclose($output);
+
+            if ($bytesWritten === false || $bytesWritten === 0) {
+                @unlink($tempDestination);
+                return $this->fail(['file' => 'Fichier vide ou échec de réception.'], 422);
+            }
+
+            if ($bytesWritten > $config->maxSizeKB * 1024) {
+                @unlink($tempDestination);
+                return $this->fail(['file' => 'Fichier trop volumineux (max ' . (int) ($config->maxSizeKB / 1024) . ' Mo).'], 422);
+            }
+
+            // Validation MIME réel APRÈS écriture (finfo), jamais sur le Content-Type client.
+            $detector = new FinfoMimeTypeDetector();
+            $realMime = $detector->detectMimeTypeFromFile($tempDestination);
+            if ($realMime === null || !in_array($realMime, $config->allowedMimes, true)) {
+                @unlink($tempDestination);
+                return $this->fail(['file' => 'Type de fichier non autorisé.'], 422);
+            }
+
+            // Renommer en définitif une fois validé (extension déduite du MIME réel).
+            $finalName = $randomName . '.' . $this->extensionFromMime($realMime);
+            if (!@rename($tempDestination, $storagePath . $finalName)) {
+                @unlink($tempDestination);
+                return $this->failServerError('Stockage indisponible.');
+            }
+
+            // Vérification post-écriture : taille disque vs octets reçus.
+            clearstatcache(true, $storagePath . $finalName);
+            $storedSize = is_file($storagePath . $finalName) ? (int) @filesize($storagePath . $finalName) : -1;
+            if ($storedSize !== (int) $bytesWritten) {
+                @unlink($storagePath . $finalName);
+                log_message('error', 'DocumentController: fichier tronqué détecté après écriture (reçu {exp} octets, disque {got}).', [
+                    'exp' => $bytesWritten,
                     'got' => $storedSize,
                 ]);
                 return $this->fail(['file' => 'Transfert incomplet détecté (fichier tronqué). Veuillez réessayer.'], 422);
@@ -99,13 +118,13 @@ class DocumentController extends ResourceController
                 'client_id' => $clientId,
                 'devis_id' => $devisId,
                 'type' => $type,
-                'nom_original' => $file->getClientName(),
-                'chemin_stocke' => $storedName,
+                'nom_original' => $nomOriginal,
+                'chemin_stocke' => $finalName,
                 'mime_type' => $realMime,
-                'taille_bytes' => $sizeBytes,
+                'taille_bytes' => (int) $bytesWritten,
                 'uploaded_by' => (string) $userId,
             ])) {
-                @unlink($storagePath . $storedName);
+                @unlink($storagePath . $finalName);
                 return $this->fail($model->errors(), 422);
             }
 
@@ -117,6 +136,16 @@ class DocumentController extends ResourceController
             log_message('error', 'DocumentController::upload: ' . $e->getMessage());
             return $this->failServerError('Erreur interne du serveur.');
         }
+    }
+
+    private function extensionFromMime(string $mime): string
+    {
+        return match ($mime) {
+            'application/pdf' => 'pdf',
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            default => 'bin',
+        };
     }
 
     public function download($documentId = null): ResponseInterface

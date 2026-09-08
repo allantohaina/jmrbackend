@@ -23,39 +23,21 @@ class MediaController extends ResourceController
         'webp' => 'image/webp',
     ];
 
+    /**
+     * Upload en FLUX BRUT (php://input) : contourne le bug CageFS
+     * (upload_tmp_dir bloqué sur /tmp, getError()=6 sur tout $_FILES).
+     * Le corps de la requête EST le fichier ; le nom d'origine passe en
+     * header X-File-Name. Logique métier inchangée (dossier public,
+     * images uniquement, getimagesize, contrat de réponse identique).
+     */
     public function upload(): ResponseInterface
     {
         try {
             // Protection admin assurée par le filtre de route ['auth', 'admin'].
-            $file = $this->request->getFile('file');
-            if ($file === null || !$file->isValid() || $file->hasMoved()) {
-                return $this->fail(['file' => 'Fichier requis ou invalide.'], 422);
-            }
-
             $uploadConfig = config('Upload');
             assert($uploadConfig instanceof Upload);
 
-            $extension = strtolower((string) $file->getClientExtension());
-            if (!isset(self::EXTENSION_MIMES[$extension])) {
-                return $this->fail(['file' => 'Image non autorisée (jpg, jpeg, png, webp uniquement).'], 422);
-            }
-
-            $sizeBytes = (int) $file->getSize();
-            if ($sizeBytes > $uploadConfig->imageMaxSizeMb * 1024 * 1024) {
-                return $this->fail(['file' => 'Image trop volumineuse (max ' . $uploadConfig->imageMaxSizeMb . ' Mo).'], 422);
-            }
-
-            $detector = new FinfoMimeTypeDetector();
-            $tempPath = $file->getTempName();
-            $realMime = $tempPath ? $detector->detectMimeTypeFromFile($tempPath) : null;
-            if ($realMime === null || $realMime !== self::EXTENSION_MIMES[$extension]) {
-                return $this->fail(['file' => 'Type MIME réel non autorisé.'], 422);
-            }
-
-            $info = @getimagesize($tempPath);
-            if ($info === false) {
-                return $this->fail(['file' => 'Fichier image illisible.'], 422);
-            }
+            $originalName = rawurldecode($this->request->getHeaderLine('X-File-Name') ?: 'image');
 
             $targetDir = rtrim(FCPATH, '/\\') . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'site' . DIRECTORY_SEPARATOR;
             if (!is_dir($targetDir) && !mkdir($targetDir, 0755, true) && !is_dir($targetDir)) {
@@ -63,22 +45,67 @@ class MediaController extends ResourceController
                 return $this->failServerError('Stockage indisponible.');
             }
 
-            $storedName = $file->getRandomName();
-            $file->move($targetDir, $storedName);
+            $randomName = bin2hex(random_bytes(16));
+            $tempDestination = $targetDir . $randomName . '.tmp';
 
-            // Vérification post-écriture : un fichier partiellement uploadé peut
-            // passer la validation initiale puis être tronqué sur disque
-            // (timeout / coupure en plein transfert). On compare la taille
-            // réelle sur disque à la taille déclarée, et on re-valide l'image
-            // sur le fichier stocké (pas seulement sur le tmp).
+            $input = @fopen('php://input', 'rb');
+            $output = @fopen($tempDestination, 'wb');
+            if (!$input || !$output) {
+                if (is_resource($input)) {
+                    fclose($input);
+                }
+                if (is_resource($output)) {
+                    fclose($output);
+                }
+                @unlink($tempDestination);
+                return $this->fail(['file' => "Impossible d'écrire le fichier."], 500);
+            }
+
+            $bytesWritten = stream_copy_to_stream($input, $output);
+            fclose($input);
+            fclose($output);
+
+            if ($bytesWritten === false || $bytesWritten === 0) {
+                @unlink($tempDestination);
+                return $this->fail(['file' => 'Fichier vide ou échec de réception.'], 422);
+            }
+
+            if ($bytesWritten > $uploadConfig->imageMaxSizeMb * 1024 * 1024) {
+                @unlink($tempDestination);
+                return $this->fail(['file' => 'Image trop volumineuse (max ' . $uploadConfig->imageMaxSizeMb . ' Mo).'], 422);
+            }
+
+            // Validation MIME réel APRÈS écriture (finfo), jamais sur le Content-Type client.
+            $detector = new FinfoMimeTypeDetector();
+            $realMime = $detector->detectMimeTypeFromFile($tempDestination);
+            if ($realMime === null || !in_array($realMime, self::EXTENSION_MIMES, true)) {
+                @unlink($tempDestination);
+                return $this->fail(['file' => 'Image non autorisée (jpg, png, webp uniquement).'], 422);
+            }
+
+            $info = @getimagesize($tempDestination);
+            if ($info === false) {
+                @unlink($tempDestination);
+                return $this->fail(['file' => 'Fichier image illisible.'], 422);
+            }
+
+            $extension = array_search($realMime, self::EXTENSION_MIMES, true) ?: 'bin';
+            $storedName = $randomName . '.' . $extension;
+            if (!@rename($tempDestination, $targetDir . $storedName)) {
+                @unlink($tempDestination);
+                return $this->failServerError('Stockage indisponible.');
+            }
+
+            // Vérification post-écriture : taille disque vs octets reçus
+            // + re-validation de l'image sur le fichier stocké.
             $storedPath = $targetDir . $storedName;
             clearstatcache(true, $storedPath);
             $storedSize = is_file($storedPath) ? (int) @filesize($storedPath) : -1;
             $storedInfo = is_file($storedPath) ? @getimagesize($storedPath) : false;
-            if ($storedSize !== $sizeBytes || $storedInfo === false) {
+            if ($storedSize !== (int) $bytesWritten || $storedInfo === false) {
                 @unlink($storedPath);
-                log_message('error', 'MediaController: fichier tronqué détecté après écriture (attendu {exp} octets, disque {got}).', [
-                    'exp' => $sizeBytes,
+                log_message('error', 'MediaController: fichier tronqué détecté après écriture (reçu {exp} octets, disque {got}).', [
+                    'exp' => $bytesWritten,
                     'got' => $storedSize,
                 ]);
                 return $this->fail(['file' => 'Transfert incomplet détecté (fichier tronqué). Veuillez réessayer.'], 422);
@@ -87,13 +114,13 @@ class MediaController extends ResourceController
             return $this->respondCreated([
                 'message' => 'Image publiée.',
                 'file' => [
-                    'original_name' => $file->getClientName(),
+                    'original_name' => $originalName,
                     'stored_name' => $storedName,
                     'url' => 'uploads/site/' . $storedName,
                     'mime' => $realMime,
-                    'size' => $sizeBytes,
-                    'width' => $info[0] ?? null,
-                    'height' => $info[1] ?? null,
+                    'size' => (int) $bytesWritten,
+                    'width' => $storedInfo[0] ?? null,
+                    'height' => $storedInfo[1] ?? null,
                 ],
             ]);
         } catch (Throwable $e) {
