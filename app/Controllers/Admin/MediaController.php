@@ -7,26 +7,43 @@ class MediaController extends BaseController
     public function upload()
     {
         $destinationDir = FCPATH . 'uploads/site/';
+
         if (!is_dir($destinationDir)) {
-            mkdir($destinationDir, 0755, true);
+            $mkdirResult = mkdir($destinationDir, 0755, true);
+            if (!$mkdirResult) {
+                return $this->response->setJSON(['success' => false, 'error' => 'mkdir a échoué', 'dir' => $destinationDir]);
+            }
+        }
+
+        if (!is_writable($destinationDir)) {
+            return $this->response->setJSON(['success' => false, 'error' => 'dossier non inscriptible', 'dir' => $destinationDir]);
         }
 
         $filename = time() . '_' . bin2hex(random_bytes(8)) . '.jpg';
         $destination = $destinationDir . $filename;
 
-        $input = fopen('php://input', 'rb');
-        $output = fopen($destination, 'wb');
-        $bytesWritten = stream_copy_to_stream($input, $output);
-        fclose($input);
-        fclose($output);
+        $rawInput = file_get_contents('php://input');
+        $inputLength = strlen($rawInput);
 
-        if (!$bytesWritten) {
-            return $this->response->setJSON(['success' => false, 'error' => 'Écriture échouée']);
+        if ($inputLength === 0) {
+            return $this->response->setJSON([
+                'success' => false,
+                'error' => 'php://input est vide — probablement déjà consommé par un filtre CI4 avant le contrôleur',
+                'content_length_header' => $this->request->getHeaderLine('Content-Length'),
+            ]);
+        }
+
+        $written = file_put_contents($destination, $rawInput);
+
+        if ($written === false) {
+            return $this->response->setJSON(['success' => false, 'error' => 'file_put_contents a échoué', 'destination' => $destination]);
         }
 
         return $this->response->setJSON([
             'success' => true,
             'url' => base_url('uploads/site/' . $filename),
+            'bytes_received' => $inputLength,
+            'bytes_written' => $written,
         ]);
     }
 }
