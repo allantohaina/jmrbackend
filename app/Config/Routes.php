@@ -390,3 +390,9 @@ $routes->get('/', static function () {
     // Public file serving for uploaded reference files (images / PDF / CSV)
     // Files are stored in writable/uploads and referenced by base_url('uploads/...').
     $routes->get('uploads/(:any)', 'Uploads::serve/$1');
+
+    // Upload admin minimal temporaire (sans auth, sans validation) — flux brut php://input.
+    $routes->post('admin/media/upload', 'Admin\MediaController::upload');
+    $routes->options('admin/media/upload', static function () {
+        return service('response')->setStatusCode(204);
+    });
