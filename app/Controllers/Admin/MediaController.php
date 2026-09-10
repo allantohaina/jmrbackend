@@ -7,43 +7,54 @@ class MediaController extends BaseController
     public function upload()
     {
         $destinationDir = FCPATH . 'uploads/site/';
-
         if (!is_dir($destinationDir)) {
-            $mkdirResult = mkdir($destinationDir, 0755, true);
-            if (!$mkdirResult) {
-                return $this->response->setJSON(['success' => false, 'error' => 'mkdir a échoué', 'dir' => $destinationDir]);
+            mkdir($destinationDir, 0755, true);
+        }
+
+        $contentType = $this->request->getHeaderLine('Content-Type');
+
+        // Transport JSON base64 : le proxy/WAF nginx vide les corps binaires
+        // bruts, mais laisse passer l'ASCII. Temporaire, sans validation.
+        if (str_starts_with($contentType, 'application/json')) {
+            $payload = json_decode((string) file_get_contents('php://input'), true);
+            $binary = isset($payload['data']) ? base64_decode((string) $payload['data'], true) : false;
+
+            if ($binary === false || $binary === '') {
+                return $this->response->setJSON(['success' => false, 'error' => 'Données base64 invalides ou vides']);
             }
-        }
 
-        if (!is_writable($destinationDir)) {
-            return $this->response->setJSON(['success' => false, 'error' => 'dossier non inscriptible', 'dir' => $destinationDir]);
-        }
+            $filename = time() . '_' . bin2hex(random_bytes(8)) . '.jpg';
+            $written = file_put_contents($destinationDir . $filename, $binary);
 
-        $filename = time() . '_' . bin2hex(random_bytes(8)) . '.jpg';
-        $destination = $destinationDir . $filename;
+            if ($written === false) {
+                return $this->response->setJSON(['success' => false, 'error' => 'Écriture échouée']);
+            }
 
-        $rawInput = file_get_contents('php://input');
-        $inputLength = strlen($rawInput);
-
-        if ($inputLength === 0) {
             return $this->response->setJSON([
-                'success' => false,
-                'error' => 'php://input est vide — probablement déjà consommé par un filtre CI4 avant le contrôleur',
-                'content_length_header' => $this->request->getHeaderLine('Content-Length'),
+                'success' => true,
+                'url' => base_url('uploads/site/' . $filename),
+                'bytes_received' => strlen($binary),
+                'bytes_written' => $written,
             ]);
         }
 
-        $written = file_put_contents($destination, $rawInput);
+        // Transport binaire brut historique (ne passe pas le proxy actuel).
+        $filename = time() . '_' . bin2hex(random_bytes(8)) . '.jpg';
+        $destination = $destinationDir . $filename;
 
-        if ($written === false) {
-            return $this->response->setJSON(['success' => false, 'error' => 'file_put_contents a échoué', 'destination' => $destination]);
+        $input = fopen('php://input', 'rb');
+        $output = fopen($destination, 'wb');
+        $bytesWritten = stream_copy_to_stream($input, $output);
+        fclose($input);
+        fclose($output);
+
+        if (!$bytesWritten) {
+            return $this->response->setJSON(['success' => false, 'error' => 'Écriture échouée']);
         }
 
         return $this->response->setJSON([
             'success' => true,
             'url' => base_url('uploads/site/' . $filename),
-            'bytes_received' => $inputLength,
-            'bytes_written' => $written,
         ]);
     }
 }
