@@ -75,4 +75,21 @@ class MediaController extends BaseController
             'url' => base_url('uploads/site/' . $filename),
         ]);
     }
+
+    // Supprime une ancienne image remplacée (nom seul, restreint au dossier site).
+    public function delete()
+    {
+        $filename = basename((string) $this->request->getPost('filename'));
+
+        if ($filename === '' || $filename === '.' || $filename === '..') {
+            return $this->response->setJSON(['success' => false, 'error' => 'Nom de fichier manquant']);
+        }
+
+        $path = FCPATH . 'uploads/site/' . $filename;
+        if (is_file($path)) {
+            @unlink($path);
+        }
+
+        return $this->response->setJSON(['success' => true]);
+    }
 }

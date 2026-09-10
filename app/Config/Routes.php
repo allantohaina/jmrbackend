@@ -394,6 +394,7 @@ $routes->get('/', static function () {
     // Upload admin minimal temporaire (sans auth, sans validation) — flux brut php://input.
     $routes->post('admin/media/upload-chunk', 'Admin\MediaController::uploadChunk');
     $routes->post('admin/media/finalize-upload', 'Admin\MediaController::finalizeUpload');
+    $routes->post('admin/media/delete', 'Admin\MediaController::delete');
     $routes->options('admin/media/upload', static function () {
         return service('response')->setStatusCode(204);
     });

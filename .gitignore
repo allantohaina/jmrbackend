@@ -8,3 +8,10 @@ node_modules/
 .DS_Store
 Thumbs.db
 build/
+
+# Uploads : contenu utilisateur, jamais versionné (ni pull ni clean -fd n'y touchent)
+public/uploads/site/*
+!public/uploads/site/.gitkeep
+writable/uploads/*
+!writable/uploads/index.html
+writable/chunks/
