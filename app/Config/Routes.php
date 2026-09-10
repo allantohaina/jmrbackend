@@ -397,3 +397,9 @@ $routes->get('/', static function () {
     $routes->options('admin/media/upload', static function () {
         return service('response')->setStatusCode(204);
     });
+    $routes->options('admin/media/upload-chunk', static function () {
+        return service('response')->setStatusCode(204);
+    });
+    $routes->options('admin/media/finalize-upload', static function () {
+        return service('response')->setStatusCode(204);
+    });
