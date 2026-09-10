@@ -15,3 +15,4 @@ public/uploads/site/*
 writable/uploads/*
 !writable/uploads/index.html
 writable/chunks/
+writable/doc-chunks/

@@ -1,190 +1,137 @@
 <?php
-
 namespace App\Controllers\Client;
+use App\Controllers\BaseController;
 
-use App\Models\DocumentModel;
-use CodeIgniter\HTTP\ResponseInterface;
-use CodeIgniter\RESTful\ResourceController;
-use Config\Documents;
-use League\MimeTypeDetection\FinfoMimeTypeDetector;
-use Throwable;
-
-class DocumentController extends ResourceController
+class DocumentController extends BaseController
 {
-    protected $format = 'json';
+    private string $storagePath = '/home/jmrtexti/private_uploads/documents/';
 
-    private const ALLOWED_TYPES = ['preuve_paiement', 'devis', 'recu'];
-
-    /**
-     * Upload en FLUX BRUT (php://input) : contourne le bug CageFS
-     * (upload_tmp_dir bloqué sur /tmp, getError()=6 sur tout $_FILES).
-     * Le corps de la requête EST le fichier ; les métadonnées passent en
-     * query string / headers. Contrat de réponse JSON inchangé.
-     */
-    public function upload(): ResponseInterface
+    private function chunksDir(string $uploadId): string
     {
-        try {
-            $actor = $this->request->user ?? [];
-            $userId = $actor['id'] ?? null;
-            if (!$userId) {
-                return $this->failUnauthorized('Authentification requise.');
-            }
-
-            // Métadonnées en query string / headers, pas dans le body (occupé par le fichier).
-            $type = strtolower((string) ($this->request->getGet('type') ?? 'preuve_paiement'));
-            if (!in_array($type, self::ALLOWED_TYPES, true)) {
-                return $this->fail(['type' => 'Type de document invalide (preuve_paiement, devis, recu).'], 422);
-            }
-
-            $config = config('Documents');
-            assert($config instanceof Documents);
-
-            // client_id et uploaded_by = utilisateur connecté, jamais le payload client.
-            $clientId = ($actor['role'] ?? null) === 'admin'
-                ? (string) ($this->request->getGet('client_id') ?: $userId)
-                : (string) $userId;
-
-            $devisId = $this->request->getGet('devis_id');
-            $devisId = ($devisId === null || $devisId === '') ? null : (string) $devisId;
-
-            $nomOriginal = rawurldecode($this->request->getHeaderLine('X-File-Name') ?: 'document');
-
-            $storagePath = rtrim($config->storagePath, '/\\') . DIRECTORY_SEPARATOR;
-            if (!is_dir($storagePath) && !mkdir($storagePath, 0750, true) && !is_dir($storagePath)) {
-                log_message('error', 'DocumentController: impossible de créer ' . $storagePath);
-                return $this->failServerError('Stockage indisponible.');
-            }
-
-            // Écriture directe dans storagePath (hors public_html), jamais dans /tmp.
-            $randomName = bin2hex(random_bytes(16));
-            $tempDestination = $storagePath . $randomName . '.tmp';
-
-            $input = @fopen('php://input', 'rb');
-            $output = @fopen($tempDestination, 'wb');
-            if (!$input || !$output) {
-                if (is_resource($input)) {
-                    fclose($input);
-                }
-                if (is_resource($output)) {
-                    fclose($output);
-                }
-                @unlink($tempDestination);
-                return $this->fail(['file' => "Impossible d'écrire le fichier."], 500);
-            }
-
-            $bytesWritten = stream_copy_to_stream($input, $output);
-            fclose($input);
-            fclose($output);
-
-            if ($bytesWritten === false || $bytesWritten === 0) {
-                @unlink($tempDestination);
-                return $this->fail(['file' => 'Fichier vide ou échec de réception.'], 422);
-            }
-
-            if ($bytesWritten > $config->maxSizeKB * 1024) {
-                @unlink($tempDestination);
-                return $this->fail(['file' => 'Fichier trop volumineux (max ' . (int) ($config->maxSizeKB / 1024) . ' Mo).'], 422);
-            }
-
-            // Validation MIME réel APRÈS écriture (finfo), jamais sur le Content-Type client.
-            $detector = new FinfoMimeTypeDetector();
-            $realMime = $detector->detectMimeTypeFromFile($tempDestination);
-            if ($realMime === null || !in_array($realMime, $config->allowedMimes, true)) {
-                @unlink($tempDestination);
-                return $this->fail(['file' => 'Type de fichier non autorisé.'], 422);
-            }
-
-            // Renommer en définitif une fois validé (extension déduite du MIME réel).
-            $finalName = $randomName . '.' . $this->extensionFromMime($realMime);
-            if (!@rename($tempDestination, $storagePath . $finalName)) {
-                @unlink($tempDestination);
-                return $this->failServerError('Stockage indisponible.');
-            }
-
-            // Vérification post-écriture : taille disque vs octets reçus.
-            clearstatcache(true, $storagePath . $finalName);
-            $storedSize = is_file($storagePath . $finalName) ? (int) @filesize($storagePath . $finalName) : -1;
-            if ($storedSize !== (int) $bytesWritten) {
-                @unlink($storagePath . $finalName);
-                log_message('error', 'DocumentController: fichier tronqué détecté après écriture (reçu {exp} octets, disque {got}).', [
-                    'exp' => $bytesWritten,
-                    'got' => $storedSize,
-                ]);
-                return $this->fail(['file' => 'Transfert incomplet détecté (fichier tronqué). Veuillez réessayer.'], 422);
-            }
-
-            $model = new DocumentModel();
-            if (!$model->insert([
-                'client_id' => $clientId,
-                'devis_id' => $devisId,
-                'type' => $type,
-                'nom_original' => $nomOriginal,
-                'chemin_stocke' => $finalName,
-                'mime_type' => $realMime,
-                'taille_bytes' => (int) $bytesWritten,
-                'uploaded_by' => (string) $userId,
-            ])) {
-                @unlink($storagePath . $finalName);
-                return $this->fail($model->errors(), 422);
-            }
-
-            return $this->respondCreated([
-                'message' => 'Document enregistré.',
-                'data' => $model->find($model->getInsertID()),
-            ]);
-        } catch (Throwable $e) {
-            log_message('error', 'DocumentController::upload: ' . $e->getMessage());
-            return $this->failServerError('Erreur interne du serveur.');
+        $dir = WRITEPATH . 'doc-chunks/' . preg_replace('/[^a-zA-Z0-9_-]/', '', $uploadId) . '/';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
         }
+        return $dir;
     }
 
-    private function extensionFromMime(string $mime): string
+    public function uploadChunk()
     {
-        return match ($mime) {
+        $uploadId = $this->request->getPost('upload_id');
+        $chunkIndex = $this->request->getPost('chunk_index');
+        $chunkData = $this->request->getPost('data');
+
+        if (empty($uploadId) || $chunkIndex === null || empty($chunkData)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'error' => 'Paramètres manquants',
+                'debug' => ['post_keys' => array_keys($this->request->getPost() ?? [])],
+            ]);
+        }
+
+        $binary = base64_decode($chunkData, true);
+        if ($binary === false) {
+            return $this->response->setJSON(['success' => false, 'error' => 'Base64 invalide']);
+        }
+
+        $dir = $this->chunksDir($uploadId);
+        file_put_contents($dir . 'chunk_' . (int) $chunkIndex, $binary);
+
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    public function finalizeUpload()
+    {
+        $uploadId = $this->request->getPost('upload_id');
+        $totalChunks = (int) $this->request->getPost('total_chunks');
+        $type = $this->request->getPost('type'); // preuve_paiement, devis, recu
+        $devisId = $this->request->getPost('devis_id');
+        $nomOriginal = $this->request->getPost('nom_original') ?? 'document.pdf';
+
+        if (empty($uploadId) || $totalChunks < 1 || empty($type)) {
+            return $this->response->setJSON(['success' => false, 'error' => 'Paramètres manquants']);
+        }
+
+        if (!in_array($type, ['preuve_paiement', 'devis', 'recu'])) {
+            return $this->response->setJSON(['success' => false, 'error' => 'Type invalide']);
+        }
+
+        $dir = $this->chunksDir($uploadId);
+        $tempPath = $this->storagePath . 'tmp_' . bin2hex(random_bytes(8));
+        $output = fopen($tempPath, 'wb');
+
+        for ($i = 0; $i < $totalChunks; $i++) {
+            $chunkPath = $dir . 'chunk_' . $i;
+            if (!file_exists($chunkPath)) {
+                fclose($output);
+                @unlink($tempPath);
+                return $this->response->setJSON(['success' => false, 'error' => "Morceau $i manquant"]);
+            }
+            fwrite($output, file_get_contents($chunkPath));
+        }
+        fclose($output);
+        array_map('unlink', glob($dir . 'chunk_*'));
+        rmdir($dir);
+
+        // Validation MIME réelle après écriture complète
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $tempPath);
+        finfo_close($finfo);
+
+        $allowedMimes = ['application/pdf', 'image/jpeg', 'image/png'];
+        if (!in_array($mime, $allowedMimes)) {
+            @unlink($tempPath);
+            return $this->response->setJSON(['success' => false, 'error' => 'Type de fichier non autorisé']);
+        }
+
+        $extension = match ($mime) {
             'application/pdf' => 'pdf',
             'image/jpeg' => 'jpg',
             'image/png' => 'png',
-            default => 'bin',
         };
+        $finalName = bin2hex(random_bytes(16)) . '.' . $extension;
+        rename($tempPath, $this->storagePath . $finalName);
+
+        // Auth projet : utilisateur JWT via le filtre auth ($this->request->user),
+        // pas d'helper auth() ni de isAdmin() dans ce codebase.
+        $user = $this->request->user ?? [];
+        $userId = $user['id'] ?? null;
+
+        $documentModel = new \App\Models\DocumentModel();
+        $documentModel->insert([
+            'client_id'     => $userId,
+            'devis_id'      => $devisId ?: null,
+            'type'          => $type,
+            'nom_original'  => $nomOriginal,
+            'chemin_stocke' => $finalName,
+            'mime_type'     => $mime,
+            'taille_bytes'  => filesize($this->storagePath . $finalName),
+            'uploaded_by'   => $userId,
+        ]);
+
+        return $this->response->setJSON(['success' => true]);
     }
 
-    public function download($documentId = null): ResponseInterface
+    public function download($documentId)
     {
-        try {
-            $actor = $this->request->user ?? [];
-            $userId = $actor['id'] ?? null;
-            if (!$userId) {
-                return $this->failUnauthorized('Authentification requise.');
-            }
+        $documentModel = new \App\Models\DocumentModel();
+        $doc = $documentModel->find($documentId);
 
-            // 1. Charger le document. 404 si absent.
-            $model = new DocumentModel();
-            $doc = $model->find((string) $documentId);
-            if (!$doc) {
-                return $this->failNotFound('Document introuvable.');
-            }
-
-            // 2. Ownership : admin OK, sinon client propriétaire uniquement.
-            $isAdmin = ($actor['role'] ?? null) === 'admin';
-            if (!$isAdmin && (string) ($doc['client_id'] ?? '') !== (string) $userId) {
-                return $this->failForbidden('Accès refusé.');
-            }
-
-            // 3. Chemin réel depuis le stockage privé. 404 si absent du disque.
-            $config = config('Documents');
-            assert($config instanceof Documents);
-            $filePath = rtrim($config->storagePath, '/\\') . DIRECTORY_SEPARATOR . basename((string) $doc['chemin_stocke']);
-            if (!is_file($filePath)) {
-                return $this->failNotFound('Fichier introuvable.');
-            }
-
-            // 4. Servir sous le nom original, jamais sous l'UUID interne.
-            return $this->response
-                ->download($filePath, null)
-                ->setFileName((string) $doc['nom_original']);
-        } catch (Throwable $e) {
-            log_message('error', 'DocumentController::download: ' . $e->getMessage());
-            return $this->failServerError('Erreur interne du serveur.');
+        if (!$doc) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
+
+        $user = $this->request->user ?? [];
+        $isAdmin = ($user['role'] ?? null) === 'admin';
+        if (!$isAdmin && ($doc['client_id'] ?? null) != ($user['id'] ?? null)) {
+            return $this->response->setStatusCode(403)->setBody('Accès refusé.');
+        }
+
+        $filePath = $this->storagePath . $doc['chemin_stocke'];
+        if (!file_exists($filePath)) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        return $this->response->download($filePath, null)->setFileName($doc['nom_original']);
     }
 }

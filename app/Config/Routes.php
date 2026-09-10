@@ -136,6 +136,8 @@ $routes->get('/', static function () {
         $routes->options('legal/data-request', static function () { return service('response')->setStatusCode(204); });
         $routes->options('exchange-rates', static function () { return service('response')->setStatusCode(204); });
         $routes->options('documents', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('documents/upload-chunk', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('documents/finalize-upload', static function () { return service('response')->setStatusCode(204); });
         $routes->options('documents/(:segment)/download', static function () { return service('response')->setStatusCode(204); });
         $routes->options('admin/media', static function () { return service('response')->setStatusCode(204); });
 
@@ -146,8 +148,9 @@ $routes->get('/', static function () {
 
     // Documents clients confidentiels (stockage privé, accès via contrôleur + ownership).
     $routes->group('documents', ['filter' => 'auth'], function($routes) {
-        $routes->post('/', 'Client\DocumentController::upload', ['filter' => 'ratelimit:auth']);
-        $routes->get('(:segment)/download', 'Client\DocumentController::download/$1');
+        $routes->post('upload-chunk', 'Client\DocumentController::uploadChunk');
+        $routes->post('finalize-upload', 'Client\DocumentController::finalizeUpload');
+        $routes->get('(:num)', 'Client\DocumentController::download/$1');
     });
 
     // Images admin du contenu public (flux séparé, dossier public).
