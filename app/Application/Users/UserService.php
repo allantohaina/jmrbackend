@@ -73,6 +73,7 @@ class UserService
             'password' => $input['password'] ?? null,
             'first_name' => $input['first_name'] ?? null,
             'last_name' => $input['last_name'] ?? null,
+            'company' => $input['company'] ?? null,
             'phone' => $input['phone'] ?? null,
             'birth_date' => $birthDate,
             'country' => $input['country'] ?? null,

@@ -17,6 +17,7 @@ class UserModel extends Model
         'password',
         'first_name',
         'last_name',
+        'company',
         'phone',
         'birth_date',
         'country',
@@ -51,6 +52,7 @@ class UserModel extends Model
         'last_name' => 'required|min_length[2]|max_length[100]',
         'phone' => 'permit_empty|max_length[20]|is_unique[users.phone,id,{id}]',
         'birth_date' => 'permit_empty|valid_date',
+        'company' => 'permit_empty|max_length[255]',
         'country' => 'permit_empty|max_length[2]',
         'address' => 'permit_empty|max_length[255]',
         'role' => 'permit_empty|in_list[admin,user,worker]',
@@ -182,7 +184,7 @@ class UserModel extends Model
      */
     public function getAllUsers(): array
     {
-        $this->select('id, email, first_name, last_name, phone, role, is_active, is_privileged, country, address, birth_date, last_login_at, created_at, updated_at, deleted_at');
+        $this->select('id, email, first_name, last_name, company, phone, role, is_active, is_privileged, country, address, birth_date, last_login_at, created_at, updated_at, deleted_at');
         $users = $this->findAll();
         return array_map(function ($user) {
             unset($user['password_hash']);
