@@ -38,6 +38,7 @@ $routes->get('/', static function () {
         });
         // Whitelisted CORS preflight — explicit, no catch-all
         $routes->options('users/register', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('users', static function () { return service('response')->setStatusCode(204); });
         $routes->options('users/refresh', static function () { return service('response')->setStatusCode(204); });
         $routes->options('users/worker', static function () { return service('response')->setStatusCode(204); });
         $routes->options('users/import-csv', static function () { return service('response')->setStatusCode(204); });
