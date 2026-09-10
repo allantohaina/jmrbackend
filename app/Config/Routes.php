@@ -114,6 +114,7 @@ $routes->get('/', static function () {
         $routes->options('workflows/(:segment)', static function () { return service('response')->setStatusCode(204); });
         $routes->options('workflows/(:segment)/transition', static function () { return service('response')->setStatusCode(204); });
         $routes->options('stats/dashboard', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('site-contents', static function () { return service('response')->setStatusCode(204); });
         $routes->options('attachments', static function () { return service('response')->setStatusCode(204); });
         $routes->options('attachments/(:segment)', static function () { return service('response')->setStatusCode(204); });
         $routes->options('uploads/image', static function () { return service('response')->setStatusCode(204); });
@@ -356,6 +357,10 @@ $routes->get('/', static function () {
 
     // Statistiques (admin)
     $routes->get('stats/dashboard', 'Stats::dashboard', ['filter' => ['auth', 'admin']]);
+
+    // Contenus éditables du site public : lecture publique, écriture admin.
+    $routes->get('site-contents', 'SiteContents::index');
+    $routes->put('site-contents', 'SiteContents::save', ['filter' => ['auth', 'admin']]);
 
     // Exports CSV (staff)
     $routes->group('exports', ['filter' => ['auth', 'staff']], function($routes) {
