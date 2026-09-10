@@ -17,6 +17,13 @@ class MediaController extends BaseController
         // bruts, mais laisse passer l'ASCII. Temporaire, sans validation.
         if (str_starts_with($contentType, 'application/json')) {
             $rawBody = (string) file_get_contents('php://input');
+            $source = 'php://input';
+            if ($rawBody === '') {
+                $rawBody = (string) $this->request->getBody();
+                if ($rawBody !== '') {
+                    $source = 'request->getBody()';
+                }
+            }
             $payload = json_decode($rawBody, true);
             $dataField = (isset($payload['data']) && is_string($payload['data'])) ? $payload['data'] : null;
             $binary = ($dataField !== null && $dataField !== '') ? base64_decode($dataField, true) : false;
@@ -26,6 +33,7 @@ class MediaController extends BaseController
                     'success' => false,
                     'error' => 'Données base64 invalides ou vides',
                     'debug' => [
+                        'source' => $source,
                         'raw_len' => strlen($rawBody),
                         'json_error' => json_last_error_msg(),
                         'has_data_key' => $dataField !== null,
