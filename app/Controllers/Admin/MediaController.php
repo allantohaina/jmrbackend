@@ -11,71 +11,35 @@ class MediaController extends BaseController
             mkdir($destinationDir, 0755, true);
         }
 
-        $contentType = $this->request->getHeaderLine('Content-Type');
+        $dataField = $this->request->getPost('data');
 
-        // Transport JSON base64 : le proxy/WAF nginx vide les corps binaires
-        // bruts, mais laisse passer l'ASCII. Temporaire, sans validation.
-        if (str_starts_with($contentType, 'application/json')) {
-            $rawBody = (string) file_get_contents('php://input');
-            $source = 'php://input';
-            if ($rawBody === '') {
-                $rawBody = (string) $this->request->getBody();
-                if ($rawBody !== '') {
-                    $source = 'request->getBody()';
-                }
-            }
-            $payload = json_decode($rawBody, true);
-            $dataField = (isset($payload['data']) && is_string($payload['data'])) ? $payload['data'] : null;
-            $binary = ($dataField !== null && $dataField !== '') ? base64_decode($dataField, true) : false;
-
-            if ($binary === false || $binary === '') {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'error' => 'Données base64 invalides ou vides',
-                    'debug' => [
-                        'source' => $source,
-                        'raw_len' => strlen($rawBody),
-                        'json_error' => json_last_error_msg(),
-                        'has_data_key' => $dataField !== null,
-                        'data_len' => $dataField !== null ? strlen($dataField) : 0,
-                        'data_head' => $dataField !== null ? substr($dataField, 0, 20) : null,
-                        'data_tail' => $dataField !== null ? substr($dataField, -20) : null,
-                    ],
-                ]);
-            }
-
-            $filename = time() . '_' . bin2hex(random_bytes(8)) . '.jpg';
-            $written = file_put_contents($destinationDir . $filename, $binary);
-
-            if ($written === false) {
-                return $this->response->setJSON(['success' => false, 'error' => 'Écriture échouée']);
-            }
-
+        if (empty($dataField)) {
             return $this->response->setJSON([
-                'success' => true,
-                'url' => base_url('uploads/site/' . $filename),
-                'bytes_received' => strlen($binary),
-                'bytes_written' => $written,
+                'success' => false,
+                'error' => 'Champ data manquant ou vide',
+                'debug' => [
+                    'post_keys' => array_keys($this->request->getPost() ?? []),
+                ],
             ]);
         }
 
-        // Transport binaire brut historique (ne passe pas le proxy actuel).
+        $binary = base64_decode($dataField, true);
+
+        if ($binary === false || $binary === '') {
+            return $this->response->setJSON(['success' => false, 'error' => 'Base64 invalide']);
+        }
+
         $filename = time() . '_' . bin2hex(random_bytes(8)) . '.jpg';
-        $destination = $destinationDir . $filename;
+        $written = file_put_contents($destinationDir . $filename, $binary);
 
-        $input = fopen('php://input', 'rb');
-        $output = fopen($destination, 'wb');
-        $bytesWritten = stream_copy_to_stream($input, $output);
-        fclose($input);
-        fclose($output);
-
-        if (!$bytesWritten) {
-            return $this->response->setJSON(['success' => false, 'error' => 'Écriture échouée']);
+        if ($written === false) {
+            return $this->response->setJSON(['success' => false, 'error' => 'Écriture disque échouée']);
         }
 
         return $this->response->setJSON([
             'success' => true,
             'url' => base_url('uploads/site/' . $filename),
+            'bytes_written' => $written,
         ]);
     }
 }
