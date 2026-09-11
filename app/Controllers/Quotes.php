@@ -53,7 +53,7 @@ class Quotes extends ResourceController
             $result = $this->quoteService()->create($input, $this->request);
 
             if ($result->isSuccess()) {
-                return $this->respondCreated($result->getPayload());
+                return $this->respondCreated(['status' => 'success', 'data' => $result->getPayload()]);
             }
 
             return $this->fail($result->getPayload(), $result->getStatus());
@@ -70,7 +70,7 @@ class Quotes extends ResourceController
             if (!$result) {
                 return $this->failNotFound('Devis introuvable');
             }
-            return $this->respond($result);
+            return $this->respond(['status' => 'success', 'data' => $result]);
         } catch (Throwable $e) {
             log_message('error', 'Quotes show error: ' . $e->getMessage());
             return $this->failServerError('Erreur interne du serveur');
@@ -86,6 +86,7 @@ class Quotes extends ResourceController
             }
             // Only expose safe fields for public view
             return $this->respond([
+                'status' => 'success',
                 'data' => [
                     'id' => $result['id'],
                     'name' => $result['name'],
@@ -147,7 +148,7 @@ class Quotes extends ResourceController
             $result = $this->quoteService()->updateStatus($id, $status, $additionalData, $actor);
 
             if ($result->isSuccess()) {
-                return $this->respond($result->getPayload());
+                return $this->respond(['status' => 'success', 'data' => $result->getPayload()]);
             }
 
             return $this->fail($result->getPayload(), $result->getStatus());
@@ -171,7 +172,7 @@ class Quotes extends ResourceController
             $result = $this->quoteService()->updateStatus($id, $status, $additionalData, $actor);
 
             if ($result->isSuccess()) {
-                return $this->respond($result->getPayload());
+                return $this->respond(['status' => 'success', 'data' => $result->getPayload()]);
             }
 
             return $this->fail($result->getPayload(), $result->getStatus());
@@ -187,7 +188,7 @@ class Quotes extends ResourceController
             $actor = $this->request->user ?? [];
             $result = $this->quoteService()->confirmByClient($id, $actor);
             if (!$result->isSuccess()) return $this->fail($result->getPayload(), $result->getStatus());
-            return $this->respond($result->getPayload());
+            return $this->respond(['status' => 'success', 'data' => $result->getPayload()]);
         } catch (Throwable $e) {
             log_message('error', 'Quotes confirm error: ' . $e->getMessage());
             return $this->failServerError('Erreur interne du serveur');
@@ -334,7 +335,7 @@ class Quotes extends ResourceController
             }
 
             $fresh = $quoteModel->find($id);
-            return $this->respond($fresh);
+            return $this->respond(['status' => 'success', 'data' => $fresh]);
         } catch (Throwable $e) {
             log_message('error', 'Quotes sign error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return $this->failServerError('Erreur interne du serveur');
