@@ -34,8 +34,10 @@ class Database extends Config
         'DBPrefix'     => '',
         'pConnect'     => false,
         'DBDebug'      => ENVIRONMENT !== 'production',
-        'charset'      => 'utf8mb4',
-        'DBCollat'     => 'utf8mb4_unicode_ci',
+        // PostgreSQL n'accepte pas utf8mb4 (MySQL uniquement) : utiliser UTF8,
+        // sinon chaque connexion échoue (client_encoding invalide) et toute l'API répond 500.
+        'charset'      => 'UTF8',
+        'DBCollat'     => '',
         'swapPre'      => '',
         'encrypt'      => false,
         'compress'     => false,
