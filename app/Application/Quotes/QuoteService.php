@@ -270,6 +270,12 @@ class QuoteService
         if (($quote['status'] ?? '') !== 'accepted') {
             return Result::fail(['error' => 'La cotation doit être acceptée avant de créer une commande.'], 422);
         }
+        $depositRow = (new \App\Models\PaymentModel())->where('quote_id', (string)$quoteId)->where('phase', 'deposit')->first();
+        $depositVerified = ($depositRow['status'] ?? '') === 'verified'
+            || in_array($quote['deposit_paid'] ?? null, [true, 1, '1'], true);
+        if (!$depositVerified) {
+            return Result::fail(['error' => 'Acompte (tranche 1) non validé : preuve de paiement à vérifier avant de créer la commande.'], 422);
+        }
         $userModel = new UserModel();
         $client = !empty($quote['client_id'])
             ? $userModel->find($quote['client_id'])
@@ -375,6 +381,11 @@ class QuoteService
                 ->orderBy('created_at', 'DESC')
                 ->findAll();
             $total = count($quotes);
+            foreach ($quotes as &$q) {
+                $q['deposit_paid'] = in_array($q['deposit_paid'] ?? null, [true, 1, '1'], true);
+                $q['balance_paid'] = in_array($q['balance_paid'] ?? null, [true, 1, '1'], true);
+            }
+            unset($q);
             return Result::ok(['data' => $quotes, 'total' => $total]);
         }
         $page = max(1, (int) ($request->getGet('page') ?? 1));
@@ -382,6 +393,12 @@ class QuoteService
         $offset = ($page - 1) * $perPage;
         $quotes = $model->getAllQuotes($perPage, $offset);
         $total = $model->countAll();
+        // Normalise les flags paiement (évite "0" string considéré comme payé côté JS)
+        foreach ($quotes as &$q) {
+            $q['deposit_paid'] = in_array($q['deposit_paid'] ?? null, [true, 1, '1'], true);
+            $q['balance_paid'] = in_array($q['balance_paid'] ?? null, [true, 1, '1'], true);
+        }
+        unset($q);
 
         $counts = [
             'draft' => 0, 'needs_info' => 0, 'sent' => 0, 'accepted' => 0,
@@ -470,6 +487,15 @@ class QuoteService
         if ($status === 'production' && ($quote['status'] ?? '') !== 'accepted') {
             return Result::fail(['error' => 'Le devis doit être accepté avant de lancer la production.'], 422);
         }
+        // La 1ère tranche (acompte) doit être vérifiée par l'admin avant de démarrer la production.
+        if ($status === 'production') {
+            $deposit = (new \App\Models\PaymentModel())->where('quote_id', (string)$id)->where('phase', 'deposit')->first();
+            $depositVerified = ($deposit['status'] ?? '') === 'verified'
+                || in_array($quote['deposit_paid'] ?? null, [true, 1, '1'], true);
+            if (!$depositVerified) {
+                return Result::fail(['error' => 'Acompte (tranche 1) non validé : le client doit payer puis l’admin doit vérifier la preuve avant de lancer la production.'], 422);
+            }
+        }
 
         foreach ($additionalData as $key => $value) {
             $forbidden = ['prix_unitaire_calcule', 'prix_total_calcule', 'cout_matiere', 'cout_main_oeuvre', 'cout_frais_generaux'];
@@ -506,7 +532,13 @@ class QuoteService
     public function getQuoteById(string $id): ?array
     {
         $model = new QuoteModel();
-        return $model->getQuoteById($id);
+        $quote = $model->getQuoteById($id);
+        if (is_array($quote)) {
+            // Normalisation stricte : seules les valeurs 1 / "1" / true sont payées
+            $quote['deposit_paid'] = in_array($quote['deposit_paid'] ?? null, [true, 1, '1'], true);
+            $quote['balance_paid'] = in_array($quote['balance_paid'] ?? null, [true, 1, '1'], true);
+        }
+        return $quote;
     }
 
     public function confirmByClient(int|string $id, array $actor): Result
@@ -558,7 +590,7 @@ class QuoteService
         $amount = (float)($quote['amount'] ?? 0);
         if ($amount <= 0) return;
 
-        $depositAmount = round($amount * 0.30, 2);
+        $depositAmount = round($amount * 0.50, 2);
         $balanceAmount = round($amount - $depositAmount, 2);
 
         $paymentModel = new \App\Models\PaymentModel();
@@ -579,7 +611,7 @@ class QuoteService
             return;
         }
 
-        // aussi tranche 2 solde 70% si inexistant
+        // aussi tranche 2 solde 50% si inexistant
         $existingBalance = $paymentModel->where('quote_id', $quoteId)->where('phase', 'balance')->first();
         if (!$existingBalance) {
             $paymentModel->insert([

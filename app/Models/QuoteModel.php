@@ -68,6 +68,14 @@ class QuoteModel extends Model
     protected $updatedField = 'updated_at';
     protected $deletedField = 'deleted_at';
 
+    // MySQL BOOLEAN = TINYINT(1) : sans cast, CodeIgniter renvoie "0"/"1" (string).
+    // En JS, la string "0" est truthy => tout devis apparaissait "Payé".
+    // On force de vrais booléens côté API.
+    protected $casts = [
+        'deposit_paid' => 'boolean',
+        'balance_paid' => 'boolean',
+    ];
+
     // Validation
     protected $validationRules = [
         'name' => 'required|min_length[2]|max_length[255]',

@@ -99,6 +99,7 @@ $routes->get('/', static function () {
         $routes->options('quote-addons/(:segment)', static function () { return service('response')->setStatusCode(204); });
         $routes->options('quote-addons/(:segment)/status', static function () { return service('response')->setStatusCode(204); });
         $routes->options('payments', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('payments/pending', static function () { return service('response')->setStatusCode(204); });
         $routes->options('payments/(:segment)', static function () { return service('response')->setStatusCode(204); });
         $routes->options('payments/(:segment)/status', static function () { return service('response')->setStatusCode(204); });
         $routes->options('assemblages', static function () { return service('response')->setStatusCode(204); });
@@ -258,6 +259,7 @@ $routes->get('/', static function () {
     // Payments
     $routes->group('payments', ['filter' => 'auth'], function($routes) {
         $routes->get('/', 'PaymentsController::index');
+        $routes->get('pending', 'PaymentsController::pending');
         $routes->get('(:segment)', 'PaymentsController::show/$1');
         $routes->put('(:segment)/status', 'PaymentsController::updateStatus/$1');
     });

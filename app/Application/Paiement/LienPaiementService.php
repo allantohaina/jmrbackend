@@ -78,7 +78,8 @@ class LienPaiementService
 
         $phase = 'balance';
         if ($quote) {
-            $phase = !empty($quote['deposit_paid']) ? 'balance' : 'deposit';
+            $depositOk = in_array($quote['deposit_paid'] ?? null, [true, 1, '1'], true);
+            $phase = $depositOk ? 'balance' : 'deposit';
         } elseif (($commande['statut_production'] ?? '') === 'Livrée') {
             $phase = 'balance';
         }

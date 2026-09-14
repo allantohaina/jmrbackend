@@ -35,6 +35,22 @@ class PaymentsController extends ResourceController
         }
     }
 
+    /** Admin/atelier : toutes les preuves en attente de vérification. */
+    public function pending(): ResponseInterface
+    {
+        try {
+            $actor = $this->request->user ?? [];
+            if (!in_array($actor['role'] ?? '', ['admin', 'worker'], true)) {
+                return $this->failForbidden();
+            }
+            $result = $this->svc()->listPending();
+            return $this->respond($result->getPayload(), $result->getStatus());
+        } catch (\Throwable $e) {
+            log_message('error', 'PaymentsController pending: ' . $e->getMessage());
+            return $this->failServerError();
+        }
+    }
+
     public function show($id = null): ResponseInterface
     {
         try {

@@ -26,6 +26,19 @@ class PaymentService
         return Result::ok(['data' => $rows, 'total_verified' => $total]);
     }
 
+    /** Preuves en attente (submitted avec preuve) pour validation admin. */
+    public function listPending(): Result
+    {
+        $rows = $this->model
+            ->select('payments.*, quotes.name as client_name, quotes.email as client_email, quotes.amount as quote_amount, quotes.status as quote_status')
+            ->join('quotes', 'quotes.id = payments.quote_id', 'left')
+            ->where('payments.status', 'submitted')
+            ->where('payments.proof_path IS NOT NULL')
+            ->orderBy('payments.created_at', 'DESC')
+            ->findAll(100);
+        return Result::ok(['data' => $rows]);
+    }
+
     public function getById(string $id): Result
     {
         $row = $this->model->find($id);
@@ -39,18 +52,45 @@ class PaymentService
         $quote = $quoteModel->find($quoteId);
         if (!$quote) return Result::notFound('Devis introuvable.');
 
+        // Aucune transaction possible avant validation client (accepted/production).
+        if (!in_array($quote['status'] ?? '', ['accepted', 'production', 'completed'], true)) {
+            return Result::fail(['error' => 'Le devis doit d’abord être validé par le client avant tout paiement.'], 422);
+        }
+
+        // Preuve image/PDF obligatoire (le client doit prouver son paiement).
+        if (empty($data['proof_path'])) {
+            return Result::fail(['error' => 'La preuve de paiement (image/PDF) est obligatoire.'], 422);
+        }
+
         $paymentModel = $this->model;
+        // Une tranche rejetée peut être resoumise avec une nouvelle preuve.
         $payment = $paymentModel->where('quote_id', $quoteId)
-            ->where('status', 'submitted')
+            ->whereIn('status', ['submitted', 'rejected'])
             ->orderBy('created_at', 'ASC')
             ->first();
         if (!$payment) {
             return Result::fail(['error' => 'Aucune tranche de paiement en attente pour ce devis.'], 422);
         }
 
+        // Si une preuve a déjà été envoyée, on attend la validation admin (pas d'écrasement).
+        // Exception : une tranche rejetée peut être resoumise avec une nouvelle preuve.
+        if (!empty($payment['proof_path']) && ($payment['status'] ?? '') === 'submitted') {
+            return Result::fail(['error' => 'Preuve déjà envoyée pour cette tranche — en attente de vérification par l’atelier.'], 422);
+        }
+
+        // La tranche 2 (solde) n'est payable qu'après vérification de la tranche 1.
+        if (($payment['phase'] ?? '') === 'balance') {
+            $deposit = $paymentModel->where('quote_id', $quoteId)->where('phase', 'deposit')->first();
+            if (($deposit['status'] ?? '') !== 'verified') {
+                return Result::fail(['error' => 'La tranche 1 (acompte) doit être vérifiée avant de payer le solde.'], 422);
+            }
+        }
+
         $updateData = [
             'proof_path' => $data['proof_path'] ?? null,
             'submitted_by' => $actorId,
+            'status' => 'submitted',
+            'reviewed_at' => null,
         ];
         if (!empty($data['payment_type'])) $updateData['payment_type'] = $data['payment_type'];
         if (!empty($data['transaction_ref'])) $updateData['transaction_ref'] = $data['transaction_ref'];
@@ -64,6 +104,9 @@ class PaymentService
 
     public function updateStatus(string $id, string $status, ?string $reviewNote = null, ?string $reviewedBy = null): Result
     {
+        if (!in_array($status, ['verified', 'rejected'], true)) {
+            return Result::fail(['error' => 'Statut invalide : seul « verified » ou « rejected » est autorisé.'], 422);
+        }
         $row = $this->model->find($id);
         if (!$row) return Result::notFound('Paiement introuvable.');
 
@@ -104,6 +147,11 @@ class PaymentService
         // Auto-create tranche 2 (balance) when tranche 1 (deposit) is verified
         if ($phase === 'deposit') {
             $this->createTranche2IfMissing($quoteId);
+            // La 1ère tranche validée démarre la production.
+            $q = $quoteModel->find($quoteId);
+            if ($q && ($q['status'] ?? '') === 'accepted') {
+                $quoteModel->update($quoteId, ['status' => 'production']);
+            }
         }
     }
 
