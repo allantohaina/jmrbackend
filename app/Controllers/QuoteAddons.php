@@ -48,6 +48,11 @@ class QuoteAddons extends ResourceController
         try {
             $actor = $this->request->user ?? [];
             $data = $this->request->getJSON(true) ?? $this->request->getPost() ?? [];
+            if (!is_array($data)) $data = [];
+            // Seul l'atelier chiffre : un client ne peut jamais fixer le prix d'un ajout.
+            if (($actor['role'] ?? null) !== 'admin') {
+                unset($data['price']);
+            }
             $result = $this->svc()->create(is_array($data) ? $data : []);
             if (!$result->isSuccess()) return $this->respond($result->getPayload(), $result->getStatus());
             return $this->respondCreated($result->getPayload());

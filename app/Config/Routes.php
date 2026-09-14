@@ -59,6 +59,11 @@ $routes->get('/', static function () {
         $routes->options('quotes/(:segment)/confirm', static function () { return service('response')->setStatusCode(204); });
         $routes->options('quotes/(:segment)/convert-to-commande', static function () { return service('response')->setStatusCode(204); });
         $routes->options('quotes/(:segment)/payments', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('proformas', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('proformas/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('proformas/(:segment)/sign', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('proformas/from-quote/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('proformas/next-number', static function () { return service('response')->setStatusCode(204); });
         $routes->options('produits', static function () { return service('response')->setStatusCode(204); });
         $routes->options('produits/categories', static function () { return service('response')->setStatusCode(204); });
         $routes->options('produits/(:segment)', static function () { return service('response')->setStatusCode(204); });
@@ -258,6 +263,18 @@ $routes->get('/', static function () {
     });
 
     $routes->post('quotes/(:segment)/payments', 'PaymentsController::submitForQuote/$1', ['filter' => 'auth']);
+
+    // Proformas (factures proforma) — staff
+    $routes->group('proformas', ['filter' => ['auth', 'staff']], function($routes) {
+        $routes->get('/', 'Proformas::index');
+        $routes->get('next-number', 'Proformas::nextNumber');
+        $routes->get('(:segment)', 'Proformas::show/$1');
+        $routes->post('/', 'Proformas::create');
+        $routes->put('(:segment)', 'Proformas::update/$1');
+        $routes->delete('(:segment)', 'Proformas::remove/$1');
+        $routes->put('(:segment)/sign', 'Proformas::sign/$1');
+        $routes->post('from-quote/(:segment)', 'Proformas::fromQuote/$1');
+    });
 
     $routes->group('notifications', ['filter' => 'auth'], function($routes) {
         $routes->get('/', 'Notifications::index');

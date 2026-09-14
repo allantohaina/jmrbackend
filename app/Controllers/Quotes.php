@@ -50,6 +50,17 @@ class Quotes extends ResourceController
                 $input['phone'] = $this->request->user['phone'] ?? ($input['phone'] ?? null);
             }
 
+            // Seule la personne qui chiffre (admin/atelier) fixe les prix :
+            // un client ne peut jamais imposer de montants ni d'états de paiement.
+            if ($role !== 'admin') {
+                unset(
+                    $input['amount'], $input['deposit_amount'], $input['balance_amount'],
+                    $input['deposit_paid'], $input['balance_paid'],
+                    $input['prix_unitaire_calcule'], $input['prix_total_calcule'],
+                    $input['cout_matiere'], $input['cout_main_oeuvre'], $input['cout_frais_generaux']
+                );
+            }
+
             $result = $this->quoteService()->create($input, $this->request);
 
             if ($result->isSuccess()) {
