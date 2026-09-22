@@ -453,6 +453,30 @@ class UserService
         ]);
     }
 
+    /**
+     * Déconnexion globale : révoque TOUS les refresh tokens actifs.
+     * Combiné avec JWT_MIN_IAT (voir JWTLibrary), cela déconnecte
+     * tous les appareils, même ceux dont le JWT n'a pas encore expiré.
+     */
+    public function logoutAll(): Result
+    {
+        $model = new RefreshTokenModel();
+        $now = date('Y-m-d H:i:s');
+        $revoked = 0;
+
+        $active = $model->where('revoked_at', null)->findAll();
+        foreach ($active as $row) {
+            $model->update($row['id'], ['revoked_at' => $now]);
+            $revoked++;
+        }
+
+        return Result::ok([
+            'message' => 'Toutes les sessions ont été révoquées.',
+            'revoked_refresh_tokens' => $revoked,
+            'next_step' => 'Mettez JWT_MIN_IAT=' . time() . ' dans le .env pour invalider aussi les JWT encore valides.',
+        ]);
+    }
+
     private function validateRequired(array $data, array $fields): array
     {
         $missing = [];
@@ -603,7 +627,7 @@ class UserService
         $model = new RefreshTokenModel();
         $token = bin2hex(random_bytes(32));
         $hash = hash('sha256', $token);
-        $expiresAt = time() + (int) (getenv('JWT_REFRESH_TTL') ?: 60 * 60 * 24 * 7);
+        $expiresAt = time() + (int) (getenv('JWT_REFRESH_TTL') ?: 60 * 60 * 24 * 2);
         $id = $this->uuidV4();
 
         // Handle CLIRequest which may not have all methods

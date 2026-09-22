@@ -33,7 +33,7 @@ class JWTLibrary
         ];
 
         $now = time();
-        $ttl = (int) ($options['ttl'] ?? getenv('JWT_TTL') ?: 60 * 60 * 24 * 7);
+        $ttl = (int) ($options['ttl'] ?? getenv('JWT_TTL') ?: 60 * 60 * 24 * 2);
 
         $payload['iss'] = $options['iss'] ?? $this->issuer;
         $payload['aud'] = $options['aud'] ?? $this->audience;
@@ -95,6 +95,14 @@ class JWTLibrary
 
         // Check expiration
         if (isset($payload->exp) && $payload->exp < ($now - $this->leeway)) {
+            return null;
+        }
+
+        // Déconnexion globale : rejette les tokens émis avant JWT_MIN_IAT.
+        // Pour déconnecter tout le monde après une mise à jour,
+        // mettre JWT_MIN_IAT = timestamp actuel dans le .env.
+        $minIat = (int) (getenv('JWT_MIN_IAT') ?: 0);
+        if ($minIat > 0 && isset($payload->iat) && (int) $payload->iat < $minIat) {
             return null;
         }
 

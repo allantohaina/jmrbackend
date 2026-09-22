@@ -132,6 +132,7 @@ $routes->get('/', static function () {
         $routes->options('admin/blacklist', static function () { return service('response')->setStatusCode(204); });
         $routes->options('admin/blacklist/(:segment)', static function () { return service('response')->setStatusCode(204); });
         $routes->options('admin/truncate', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/logout-all', static function () { return service('response')->setStatusCode(204); });
         $routes->options('admin/history/audit', static function () { return service('response')->setStatusCode(204); });
         $routes->options('admin/history/tokens', static function () { return service('response')->setStatusCode(204); });
         $routes->options('admin/history/projects', static function () { return service('response')->setStatusCode(204); });
@@ -303,6 +304,9 @@ $routes->get('/', static function () {
         $routes->delete('blacklist/(:segment)', 'Blacklist::delete/$1');
 
         $routes->post('truncate', 'AdminData::truncateTestData', ['filter' => ['auth', 'admin']]);
+
+        // Déconnexion globale de toutes les sessions (après mise à jour)
+        $routes->post('logout-all', 'AdminSession::logoutAll');
     });
 
     // Production Assemblages
