@@ -37,7 +37,7 @@ class SiteContents extends ResourceController
             $key = trim((string) ($input['key'] ?? ''));
             $value = (string) ($input['value'] ?? '');
             $locale = ($input['locale'] ?? 'fr') === 'en' ? 'en' : 'fr';
-            $type = ($input['type'] ?? 'text') === 'image' ? 'image' : 'text';
+            $type = in_array(($input['type'] ?? 'text'), ['image', 'video'], true) ? (string) $input['type'] : 'text';
 
             if ($key === '' || strlen($key) > 191 || $value === '') {
                 return $this->failValidationErrors('Clé ou valeur manquante.');

@@ -42,6 +42,10 @@ class MediaController extends BaseController
     {
         $uploadId = $this->request->getPost('upload_id');
         $totalChunks = (int) $this->request->getPost('total_chunks');
+        // Extension souhaitée (jpg par défaut pour rétrocompat, mp4/webm pour vidéo).
+        $requestedExt = strtolower((string) $this->request->getPost('ext'));
+        $allowedExts = ['jpg' => 'jpg', 'jpeg' => 'jpg', 'mp4' => 'mp4', 'webm' => 'webm'];
+        $ext = $allowedExts[$requestedExt] ?? 'jpg';
 
         if (empty($uploadId) || $totalChunks < 1) {
             return $this->response->setJSON(['success' => false, 'error' => 'Paramètres manquants']);
@@ -53,7 +57,7 @@ class MediaController extends BaseController
             mkdir($destinationDir, 0755, true);
         }
 
-        $filename = time() . '_' . bin2hex(random_bytes(8)) . '.jpg';
+        $filename = time() . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
         $output = fopen($destinationDir . $filename, 'wb');
 
         for ($i = 0; $i < $totalChunks; $i++) {
