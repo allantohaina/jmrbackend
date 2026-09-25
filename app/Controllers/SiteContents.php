@@ -47,7 +47,11 @@ class SiteContents extends ResourceController
             $existing = $model->where('content_key', $key)->where('locale', $locale)->first();
 
             if ($existing) {
+                $oldValue = (string) ($existing['value'] ?? '');
                 $model->update($existing['id'], ['value' => $value, 'type' => $type]);
+                // Radical : l'ancien fichier remplacé est supprimé pour de bon
+                // (côté serveur, même si le navigateur se ferme entre-temps).
+                \App\Libraries\SiteMediaCleaner::collectReplaced($oldValue, $value);
                 return $this->respond(['message' => 'Contenu mis à jour.', 'key' => $key]);
             }
 
