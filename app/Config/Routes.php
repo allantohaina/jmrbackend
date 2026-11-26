@@ -121,6 +121,13 @@ $routes->get('/', static function () {
         $routes->options('workflows/(:segment)', static function () { return service('response')->setStatusCode(204); });
         $routes->options('workflows/(:segment)/transition', static function () { return service('response')->setStatusCode(204); });
         $routes->options('stats/dashboard', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('compta/balance', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('compta/grand-livre/(:segment)', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('compta/ecritures', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('compta/tva', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('tresorerie/synthese', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('tresorerie/previsions', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('tresorerie/generer', static function () { return service('response')->setStatusCode(204); });
         $routes->options('site-contents', static function () { return service('response')->setStatusCode(204); });
         $routes->options('attachments', static function () { return service('response')->setStatusCode(204); });
         $routes->options('attachments/(:segment)', static function () { return service('response')->setStatusCode(204); });
@@ -148,7 +155,6 @@ $routes->get('/', static function () {
         $routes->options('documents/upload-chunk', static function () { return service('response')->setStatusCode(204); });
         $routes->options('documents/finalize-upload', static function () { return service('response')->setStatusCode(204); });
         $routes->options('documents/(:segment)/download', static function () { return service('response')->setStatusCode(204); });
-        $routes->options('admin/media', static function () { return service('response')->setStatusCode(204); });
 
     $routes->group('legal', function($routes) {
         $routes->post('consent', 'Legal::consent');
@@ -163,8 +169,19 @@ $routes->get('/', static function () {
     });
 
     // Images admin du contenu public (flux séparé, dossier public).
+    // Les uploads fragmentés et la suppression sont réservés aux admins :
+    // ils écrivent/effacent des fichiers servant le site public.
     $routes->group('admin/media', ['filter' => ['auth', 'admin']], function($routes) {
         $routes->post('/', 'Admin\MediaController::upload', ['filter' => 'ratelimit:auth']);
+        $routes->post('upload-chunk', 'Admin\MediaController::uploadChunk');
+        $routes->post('finalize-upload', 'Admin\MediaController::finalizeUpload');
+        $routes->post('delete', 'Admin\MediaController::delete');
+
+        // Préflight CORS : les OPTIONS ne portent pas d'Authorization.
+        $routes->options('admin/media', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/media/upload-chunk', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/media/finalize-upload', static function () { return service('response')->setStatusCode(204); });
+        $routes->options('admin/media/delete', static function () { return service('response')->setStatusCode(204); });
     });
     
     // Protected routes (authentication required)
@@ -382,6 +399,21 @@ $routes->get('/', static function () {
     // Statistiques (admin)
     $routes->get('stats/dashboard', 'Stats::dashboard', ['filter' => ['auth', 'admin']]);
 
+    // Comptabilité en partie double (admin)
+    $routes->group('compta', ['filter' => ['auth', 'admin']], function($routes) {
+        $routes->get('balance', 'Compta::balance');
+        $routes->get('grand-livre/(:segment)', 'Compta::grandLivre/$1');
+        $routes->get('ecritures', 'Compta::ecritures');
+        $routes->get('tva', 'Compta::tva');
+    });
+
+    // Trésorerie prévisionnelle (admin)
+    $routes->group('tresorerie', ['filter' => ['auth', 'admin']], function($routes) {
+        $routes->get('synthese', 'Tresorerie::synthese');
+        $routes->get('previsions', 'Tresorerie::previsions');
+        $routes->post('generer', 'Tresorerie::generer');
+    });
+
     // Contenus éditables du site public : lecture publique, écriture admin.
     $routes->get('site-contents', 'SiteContents::index');
     $routes->put('site-contents', 'SiteContents::save', ['filter' => ['auth', 'admin']]);
@@ -423,16 +455,4 @@ $routes->get('/', static function () {
     // Files are stored in writable/uploads and referenced by base_url('uploads/...').
     $routes->get('uploads/(:any)', 'Uploads::serve/$1');
 
-    // Upload admin minimal temporaire (sans auth, sans validation) — flux brut php://input.
-    $routes->post('admin/media/upload-chunk', 'Admin\MediaController::uploadChunk');
-    $routes->post('admin/media/finalize-upload', 'Admin\MediaController::finalizeUpload');
-    $routes->post('admin/media/delete', 'Admin\MediaController::delete');
-    $routes->options('admin/media/upload', static function () {
-        return service('response')->setStatusCode(204);
-    });
-    $routes->options('admin/media/upload-chunk', static function () {
-        return service('response')->setStatusCode(204);
-    });
-    $routes->options('admin/media/finalize-upload', static function () {
-        return service('response')->setStatusCode(204);
-    });
+
