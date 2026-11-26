@@ -376,7 +376,7 @@ class Quotes extends ResourceController
 
             // Le client peut supprimer ses devis tant que la production n'a pas commencé.
             // Les devis acceptés / en production / terminés restent conservés pour le suivi.
-            $clientDeletableStatuses = ['draft', 'pending', 'needs_info', 'sent', 'rejected', 'expired'];
+            $clientDeletableStatuses = ['draft', 'sent', 'rejected', 'expired'];
             if (!$isAdmin && !in_array($quote['status'] ?? '', $clientDeletableStatuses, true)) {
                 return $this->failForbidden('Ce devis ne peut plus être supprimé (production en cours ou terminée).');
             }
