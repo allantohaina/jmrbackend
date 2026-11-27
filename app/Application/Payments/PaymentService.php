@@ -9,6 +9,38 @@ class PaymentService
 {
     private PaymentModel $model;
 
+    /** Notification générique liée à un paiement et à son devis. */
+    private function notifyPayment(string $quoteId, string $event, string $title, string $message, string $type, string $url, ?string $actorId = null, bool $toStaff = false): void
+    {
+        try {
+            $notifications = new \App\Application\Notifications\NotificationService();
+            $userModel = new \App\Models\UserModel();
+            $quote = (new \App\Models\QuoteModel())->getQuoteById($quoteId);
+            if (!$quote) return;
+
+            if ($toStaff) {
+                foreach ($userModel->whereIn('role', ['admin', 'worker'])->findAll() as $member) {
+                    $notifications->create((string)$member['id'], $event, $title, $message, 'payment', $quoteId, $url, $actorId, $type);
+                }
+                return;
+            }
+
+            $client = null;
+            if (!empty($quote['client_id'])) $client = $userModel->find($quote['client_id']);
+            if (!$client && !empty($quote['email'])) {
+                $row = \Config\Database::connect()
+                    ->query('SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1', [strtolower((string)$quote['email'])])
+                    ->getRowArray();
+                if ($row) $client = $row;
+            }
+            if ($client) {
+                $notifications->create((string)$client['id'], $event, $title, $message, 'payment', $quoteId, $url, $actorId, $type);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'PaymentService notifyPayment: ' . $e->getMessage());
+        }
+    }
+
     public function __construct(?PaymentModel $model = null)
     {
         $this->model = $model ?? new PaymentModel();
@@ -69,6 +101,23 @@ class PaymentService
             ->orderBy('created_at', 'ASC')
             ->first();
         if (!$payment) {
+            // Filet de sécurité : si la tranche 1 n'a pas été créée lors de l'acceptation
+            // (écriture concurrente / retard), on la crée ici avant de continuer.
+            $amount = (float)($quote['amount'] ?? 0);
+            if ($amount > 0) {
+                $paymentModel->insert([
+                    'quote_id' => $quoteId,
+                    'phase' => 'deposit',
+                    'amount' => round($amount * 0.50, 2),
+                    'status' => 'submitted',
+                ]);
+                $payment = $paymentModel->where('quote_id', $quoteId)
+                    ->where('phase', 'deposit')
+                    ->where('status', 'submitted')
+                    ->first();
+            }
+        }
+        if (!$payment) {
             return Result::fail(['error' => 'Aucune tranche de paiement en attente pour ce devis.'], 422);
         }
 
@@ -99,6 +148,12 @@ class PaymentService
             return Result::fail(['error' => 'Erreur lors de l\'enregistrement de la preuve.', 'messages' => $paymentModel->errors()], 422);
         }
 
+        $this->notifyPayment(
+            $quoteId, 'payment.submitted', 'Preuve de paiement envoyée',
+            sprintf('Une preuve de paiement (%s) attend votre vérification.', $updateData['payment_type'] ?? 'virement'),
+            'info', '/backoffice/devis/edit?id=' . $quoteId, $actorId, true
+        );
+
         return Result::ok(['data' => $paymentModel->find($payment['id'])]);
     }
 
@@ -124,6 +179,18 @@ class PaymentService
         // If verified, update the quote's deposit_paid or balance_paid
         if ($status === 'verified' && !empty($row['quote_id'])) {
             $this->markQuotePaymentAsPaid($row['quote_id'], $row['phase']);
+            $label = ($row['phase'] ?? '') === 'deposit' ? 'acompte' : 'solde';
+            $this->notifyPayment(
+                (string)$row['quote_id'], 'payment.verified', 'Paiement vérifié',
+                'Votre ' . $label . ' a été vérifié par l’atelier. Merci pour votre confiance.',
+                'success', '/mon-profil/devis/detail?id=' . $row['quote_id'], $reviewedBy
+            );
+        } elseif ($status === 'rejected' && !empty($row['quote_id'])) {
+            $this->notifyPayment(
+                (string)$row['quote_id'], 'payment.rejected', 'Preuve de paiement refusée',
+                'Votre preuve de paiement a été refusée. ' . (string)($reviewNote ?? 'Merci de soumettre une nouvelle preuve.'),
+                'warning', '/mon-profil/devis/detail?id=' . $row['quote_id'], $reviewedBy
+            );
         }
 
         return Result::ok(['data' => $this->model->find($id)]);
@@ -151,6 +218,7 @@ class PaymentService
             $q = $quoteModel->find($quoteId);
             if ($q && ($q['status'] ?? '') === 'accepted') {
                 $quoteModel->update($quoteId, ['status' => 'production']);
+                (new \App\Application\Quotes\QuoteService())->notifyQuoteStatus($q, 'production', null, 'accepted');
             }
         }
     }
