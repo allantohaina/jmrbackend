@@ -243,7 +243,7 @@ class QuoteService
             'needs_info' => ['Informations complémentaires demandées', "L'atelier a besoin d'informations supplémentaires pour finaliser votre devis.", 'warning'],
             'rejected'   => ['Devis annulé', 'Votre demande de devis a été annulée.', 'warning'],
             'production' => ['Production lancée', 'Votre commande est passée en production. Vous pouvez suivre son avancement.', 'info'],
-            'completed'  => ['Commande terminée', 'Votre commande est terminée.', 'success'],
+            'completed'  => ['Commande terminée — merci !', 'Votre commande est terminée. Merci pour votre confiance, votre dossier est clos.', 'success'],
             'expired'    => ['Offre expirée', 'Le délai de validité de votre devis a expiré. Contactez-nous pour en recevoir un nouveau.', 'warning'],
         ];
 
@@ -540,6 +540,16 @@ class QuoteService
         if ($status === 'production' && ($quote['status'] ?? '') !== 'accepted') {
             return Result::fail(['error' => 'Le devis doit être accepté avant de lancer la production.'], 422);
         }
+        // Clôture : le solde doit être payé et vérifié avant de fermer le dossier.
+        if ($status === 'completed') {
+            $balance = (new \App\Models\PaymentModel())
+                ->where('quote_id', (string)$id)->where('phase', 'balance')->first();
+            $balancePaid = ($balance['status'] ?? '') === 'verified'
+                || in_array($quote['balance_paid'] ?? null, [true, 1, '1'], true);
+            if (!$balancePaid) {
+                return Result::fail(['error' => 'Le solde (tranche 2) doit être payé et vérifié avant la clôture du dossier.'], 422);
+            }
+        }
         // La 1ère tranche (acompte) doit être vérifiée par l'admin avant de démarrer la production.
         if ($status === 'production') {
             $deposit = (new \App\Models\PaymentModel())->where('quote_id', (string)$id)->where('phase', 'deposit')->first();
@@ -564,6 +574,11 @@ class QuoteService
         // Auto-trigger tranche 1 (deposit) when devis is accepted
         if ($status === 'accepted' && ($quote['status'] ?? '') !== 'accepted') {
             $this->createTranche1((string)$id, $model);
+        }
+
+        // Clôture : on ferme les tickets de production encore ouverts.
+        if ($status === 'completed') {
+            (new \App\Models\ProductionTicketModel())->closeForQuote((string)$id);
         }
 
         $updatedQuote = $model->getQuoteById($id);

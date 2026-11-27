@@ -182,6 +182,16 @@ class Users extends ResourceController
         }
     }
 
+    public function history($id = null)
+    {
+        try {
+            $result = (new \App\Application\Crm\ClientHistoryService())->getForUser((string)$id);
+            return $this->respondResult($result);
+        } catch (\Throwable $e) {
+            return $this->fail(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function refresh()
     {
         try {

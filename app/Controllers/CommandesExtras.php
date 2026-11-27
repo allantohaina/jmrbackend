@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Application\Factures\FactureService;
 use App\Application\Paiement\LienPaiementService;
 use App\Application\Recu\RecuService;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -37,6 +38,45 @@ class CommandesExtras extends ResourceController
             return $response;
         } catch (Throwable $e) {
             log_message('error', 'CommandesExtras recuPdf error: ' . $e->getMessage());
+            return $this->failServerError('Erreur interne du serveur');
+        }
+    }
+
+    public function devisPdf($id = null): ResponseInterface
+    {
+        return $this->documentPdf((string)$id, 'devis');
+    }
+
+    public function facturePdf($id = null): ResponseInterface
+    {
+        return $this->documentPdf((string)$id, 'facture');
+    }
+
+    private function documentPdf(string $id, string $kind): ResponseInterface
+    {
+        try {
+            $actor = $this->request->user ?? [];
+            $quote = (new \App\Models\QuoteModel())->getQuoteById($id);
+            if (!$quote) return $this->failNotFound('Devis introuvable.');
+
+            $isStaff = in_array((string)($actor['role'] ?? ''), ['admin', 'worker'], true);
+            $isOwner = !empty($quote['client_id'])
+                && (string)$quote['client_id'] === (string)($actor['id'] ?? '');
+            if (!$isOwner) {
+                $isOwner = !empty($quote['email']) && !empty($actor['email'])
+                    && strtolower((string)$quote['email']) === strtolower((string)$actor['email']);
+            }
+            if (!$isStaff && !$isOwner) return $this->failForbidden('Accès refusé à ce document.');
+
+            $result = (new FactureService())->generate($id, $kind);
+            if (!$result->isSuccess()) return $this->fail($result->getPayload(), $result->getStatus());
+            $payload = $result->getPayload();
+            return $this->response
+                ->setHeader('Content-Type', 'application/pdf')
+                ->setHeader('Content-Disposition', 'inline; filename="' . $payload['filename'] . '"')
+                ->setBody($payload['pdf']);
+        } catch (Throwable $e) {
+            log_message('error', 'CommandesExtras documentPdf error: ' . $e->getMessage());
             return $this->failServerError('Erreur interne du serveur');
         }
     }

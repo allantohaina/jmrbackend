@@ -194,6 +194,7 @@ $routes->get('/', static function () {
         $routes->group('', ['filter' => 'admin'], function($routes) {
             $routes->get('/', 'Users::index');
             $routes->get('clients-revenue', 'Users::clientsWithRevenue');
+            $routes->get('(:segment)/history', 'Users::history/$1');
             $routes->post('worker', 'Users::createWorker');
             $routes->post('import-csv', 'Users::importCSV');
             $routes->get('(:segment)', 'Users::show/$1');
@@ -283,6 +284,12 @@ $routes->get('/', static function () {
     });
 
     $routes->post('quotes/(:segment)/payments', 'PaymentsController::submitForQuote/$1', ['filter' => 'auth']);
+
+    // Documents téléchargeables (devis / facture)
+    $routes->group('documents', ['filter' => 'auth'], function($routes) {
+        $routes->get('devis/(:segment)/pdf', 'CommandesExtras::devisPdf/$1');
+        $routes->get('facture/(:segment)/pdf', 'CommandesExtras::facturePdf/$1');
+    });
 
     // Proformas (factures proforma) — staff
     $routes->group('proformas', ['filter' => ['auth', 'staff']], function($routes) {
