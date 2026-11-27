@@ -53,47 +53,66 @@ class QuoteAddonService
     {
         $row = $this->model->find($id);
         if (!$row) return Result::notFound('Addon introuvable.');
-        
+
+        $oldStatus = (string)($row['status'] ?? 'pending');
+        $effectivePrice = $price !== null ? $price : (float)($row['price'] ?? 0);
+
         $updateData = ['status' => $status];
-        if ($price !== null) {
-            $updateData['price'] = $price;
-        }
-        
+        if ($price !== null) $updateData['price'] = $price;
         if (!$this->model->update($id, $updateData)) {
             return Result::fail(['error' => 'Erreur lors de la mise à jour.'], 422);
         }
 
-        // If addon is included, add its price to the quote's balance_amount and sync tranche 2
-        if ($status === 'included' && $price !== null) {
+        // Un seul delta : ajout quand on inclut, retrait quand on annule une inclusion.
+        $delta = 0.0;
+        if ($status === 'included' && $oldStatus !== 'included') $delta = $effectivePrice;
+        if ($status === 'rejected' && $oldStatus === 'included') $delta = -$effectivePrice;
+
+        if ($delta !== 0.0) {
             $quote = $this->quoteModel->find($row['quote_id']);
             if ($quote) {
-                $currentBalance = (float)($quote['balance_amount'] ?? 0);
                 $this->quoteModel->update($row['quote_id'], [
-                    'balance_amount' => $currentBalance + $price,
+                    'amount' => max(0, (float)($quote['amount'] ?? 0) + $delta),
+                    'prix_total_calcule' => max(0, (float)($quote['prix_total_calcule'] ?? 0) + $delta),
+                    'balance_amount' => max(0, (float)($quote['balance_amount'] ?? 0) + $delta),
                 ]);
-
-                // Sync tranche 2 payment amount with updated balance
-                $paymentService = new \App\Application\Payments\PaymentService();
-                $paymentService->syncTranche2Amount((string)$row['quote_id']);
-            }
-        }
-
-        // If addon is rejected, subtract its price from balance_amount
-        if ($status === 'rejected' && $price !== null) {
-            $quote = $this->quoteModel->find($row['quote_id']);
-            if ($quote) {
-                $currentBalance = (float)($quote['balance_amount'] ?? 0);
-                $newBalance = max(0, $currentBalance - $price);
-                $this->quoteModel->update($row['quote_id'], [
-                    'balance_amount' => $newBalance,
-                ]);
-
-                $paymentService = new \App\Application\Payments\PaymentService();
-                $paymentService->syncTranche2Amount((string)$row['quote_id']);
+                (new \App\Application\Payments\PaymentService())->syncTranche2Amount((string)$row['quote_id']);
+                $this->notifyAddon($row, $status, $effectivePrice);
             }
         }
 
         return Result::ok(['data' => $this->model->find($id)]);
+    }
+
+    private function notifyAddon(array $addon, string $status, float $price): void
+    {
+        try {
+            $quote = $this->quoteModel->find($addon['quote_id']);
+            if (!$quote) return;
+            $userModel = new \App\Models\UserModel();
+            $client = null;
+            if (!empty($quote['client_id'])) $client = $userModel->find($quote['client_id']);
+            if (!$client && !empty($quote['email'])) {
+                $row = \Config\Database::connect()
+                    ->query('SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1', [strtolower((string)$quote['email'])])
+                    ->getRowArray();
+                if ($row) $client = $row;
+            }
+            if (!$client) return;
+            $included = $status === 'included';
+            (new \App\Application\Notifications\NotificationService())->create(
+                (string)$client['id'],
+                'quote.addon',
+                $included ? 'Élément ajouté au devis' : 'Élément retiré du devis',
+                ($included ? 'Un élément supplémentaire a été ajouté : ' : 'Un élément a été retiré : ')
+                    . (string)($addon['title'] ?? 'Prestation') . ' — ' . number_format($price, 2, ',', ' ') . ' Ar',
+                'quote', (string)$addon['quote_id'],
+                '/mon-profil/devis/detail?id=' . $addon['quote_id'],
+                null, $included ? 'success' : 'warning'
+            );
+        } catch (\Throwable $e) {
+            log_message('error', 'QuoteAddonService notifyAddon: ' . $e->getMessage());
+        }
     }
 
     public function delete(string $id): Result

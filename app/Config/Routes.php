@@ -356,6 +356,25 @@ $routes->get('/', static function () {
         $routes->get('(:segment)/qr-data', 'CommandesExtras::qrData/$1', ['filter' => 'staff']);
     });
 
+    // Suivi production (tickets, tâches, qualification chef, contretemps)
+    $routes->group('production', ['filter' => 'auth'], function($routes) {
+        $routes->get('tickets', 'ProductionTasks::tickets');
+        $routes->get('tickets/(:segment)/tasks', 'ProductionTasks::tasks/$1');
+        $routes->post('tickets/(:segment)/tasks', 'ProductionTasks::createTask/$1');
+        $routes->get('tickets/(:segment)/reviews', 'ProductionTasks::reviews/$1');
+        $routes->put('tasks/(:segment)/assign', 'ProductionTasks::assign/$1');
+        $routes->put('tasks/(:segment)/review', 'ProductionTasks::review/$1', ['filter' => 'staff']);
+        $routes->put('tickets/(:segment)/close', 'ProductionTasks::close/$1', ['filter' => 'staff']);
+    });
+
+    // Retouches / corrections avec prix
+    $routes->group('retouches', ['filter' => ['auth', 'staff']], function($routes) {
+        $routes->get('/', 'Retouches::list');
+        $routes->post('/', 'Retouches::create');
+        $routes->put('(:segment)/include', 'Retouches::include/$1');
+        $routes->put('(:segment)/reject', 'Retouches::reject/$1');
+    });
+
     // Achats (Purchases)
     $routes->group('achats', ['filter' => ['auth', 'staff']], function($routes) {
         $routes->get('/', 'Achats::index');

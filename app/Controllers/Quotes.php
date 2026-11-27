@@ -213,7 +213,9 @@ class Quotes extends ResourceController
             if (($actor['role'] ?? null) !== 'admin') {
                 return $this->failForbidden('Seul un administrateur peut créer une commande.');
             }
-            $result = $this->quoteService()->convertToCommande((string)$id, $this->getInputData());
+            $input = $this->getInputData();
+            $input['created_by'] = $actor['id'] ?? null;
+            $result = $this->quoteService()->convertToCommande((string)$id, $input);
             if (!$result->isSuccess()) {
                 return $this->fail($result->getPayload(), $result->getStatus());
             }

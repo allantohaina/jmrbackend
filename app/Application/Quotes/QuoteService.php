@@ -404,6 +404,9 @@ class QuoteService
             $payload = $result->getPayload();
             $cmdId = $payload['data']['id'] ?? $payload['id'] ?? null;
             if ($cmdId) {
+                // Ouverture automatique du ticket de suivi atelier
+                (new \App\Application\Production\ProductionTaskService())
+                    ->ensureTicketForQuote((string)$quoteId, (string)$cmdId, $extra['created_by'] ?? null);
                 // update quote status
                 $qm = new QuoteModel();
                 $qm->update($quoteId, ['status' => 'production']);
