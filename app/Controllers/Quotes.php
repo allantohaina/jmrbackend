@@ -377,8 +377,12 @@ class Quotes extends ResourceController
             // Le client peut supprimer ses devis tant que la production n'a pas commencé.
             // Les devis acceptés / en production / terminés restent conservés pour le suivi.
             $clientDeletableStatuses = ['draft', 'sent', 'rejected', 'expired'];
-            if (!$isAdmin && !in_array($quote['status'] ?? '', $clientDeletableStatuses, true)) {
-                return $this->failForbidden('Ce devis ne peut plus être supprimé (production en cours ou terminée).');
+            $status = $quote['status'] ?? '';
+            if (!$isAdmin && !in_array($status, $clientDeletableStatuses, true)) {
+                $message = in_array($status, ['pending', 'needs_info'], true)
+                    ? 'Ce devis est encore en attente de traitement par l’atelier : utilisez « Annuler » plutôt que « Supprimer ».'
+                    : 'Ce devis ne peut plus être supprimé (production en cours ou terminée).';
+                return $this->failForbidden($message);
             }
 
             $quoteModel->delete($id);
