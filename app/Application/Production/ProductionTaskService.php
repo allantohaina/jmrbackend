@@ -54,7 +54,16 @@ class ProductionTaskService
             'status' => 'open',
             'created_by' => $data['created_by'] ?? null,
         ]);
-        return Result::created(['data' => $this->tickets->find($this->tickets->getInsertID())]);
+        $ticketId = $this->tickets->getInsertID();
+        if ($ticketId) {
+            $this->tasks->insert([
+                'ticket_id' => $ticketId,
+                'title' => 'Production — confection',
+                'description' => 'Suivi de la fabrication, contrôle qualité et finitions.',
+                'status' => 'todo',
+            ]);
+        }
+        return Result::created(['data' => $this->tickets->find($ticketId)]);
     }
 
     public function tickets(?string $quoteId = null): Result

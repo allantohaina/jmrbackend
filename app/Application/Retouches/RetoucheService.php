@@ -53,7 +53,7 @@ class RetoucheService
             'title' => $row['title'],
             'description' => $row['description'] ?? null,
             'price' => $effectivePrice,
-            'commande_id' => $row['commande_id'] ?? null,
+            'commande_id' => !empty($row['commande_id']) ? $row['commande_id'] : null,
         ]);
         if (!$addon->isSuccess()) return $addon;
 
