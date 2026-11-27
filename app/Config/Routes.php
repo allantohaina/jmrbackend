@@ -359,6 +359,7 @@ $routes->get('/', static function () {
     // Suivi production (tickets, tâches, qualification chef, contretemps)
     $routes->group('production', ['filter' => 'auth'], function($routes) {
         $routes->get('tickets', 'ProductionTasks::tickets');
+        $routes->post('tickets', 'ProductionTasks::createTicket');
         $routes->get('tickets/(:segment)/tasks', 'ProductionTasks::tasks/$1');
         $routes->post('tickets/(:segment)/tasks', 'ProductionTasks::createTask/$1');
         $routes->get('tickets/(:segment)/reviews', 'ProductionTasks::reviews/$1');

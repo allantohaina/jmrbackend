@@ -32,6 +32,18 @@ class ProductionTasks extends ResourceController
         }
     }
 
+    public function createTicket(): ResponseInterface
+    {
+        try {
+            $input = $this->input();
+            $input['created_by'] = $this->request->user['id'] ?? null;
+            $result = $this->svc()->createTicket($input);
+            return $this->respond($result->getPayload(), $result->getStatus());
+        } catch (Throwable $e) {
+            return $this->failServerError($e->getMessage());
+        }
+    }
+
     public function tasks($ticketId = null): ResponseInterface
     {
         try {

@@ -43,6 +43,20 @@ class ProductionTaskService
         }
     }
 
+    public function createTicket(array $data): Result
+    {
+        if (empty($data['commande_id'])) {
+            return Result::fail(['error' => 'commande_id requis.'], 422);
+        }
+        $this->tickets->insert([
+            'commande_id' => $data['commande_id'],
+            'quote_id' => $data['quote_id'] ?? null,
+            'status' => 'open',
+            'created_by' => $data['created_by'] ?? null,
+        ]);
+        return Result::created(['data' => $this->tickets->find($this->tickets->getInsertID())]);
+    }
+
     public function tickets(?string $quoteId = null): Result
     {
         $builder = $this->tickets->orderBy('created_at', 'DESC');
